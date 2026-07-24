@@ -8,6 +8,10 @@ return [
             'reports.view' => 'View usage reports',
             'reports.export' => 'Export reports as CSV',
         ],
+        'Advertisement management' => [
+            'advertisements.view' => 'View published advertisements',
+            'advertisements.create' => 'Create advertisements and upload images',
+        ],
         'User management' => [
             'users.view' => 'View user accounts',
             'users.create' => 'Create user accounts',

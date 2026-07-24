@@ -26,6 +26,8 @@ class UserSeeder extends Seeder
                     'transactions.view',
                     'reports.view',
                     'reports.export',
+                    'advertisements.view',
+                    'advertisements.create',
                 ],
             ],
             [
@@ -46,6 +48,7 @@ class UserSeeder extends Seeder
 
             return [$role['slug'] => $model];
         });
+
 
         $users = [
             [

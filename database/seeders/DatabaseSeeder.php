@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             StudentSeeder::class,
             EmployeeSeeder::class,
+            CardholderPhotoSeeder::class,
         ]);
 
         if (RfidTransaction::count() === 0) {

@@ -58,4 +58,10 @@ class RfidTransaction extends Model
     {
         return $this->belongsTo(Employee::class);
     }
+
+    public function cardholderPhotoPath(): ?string
+    {
+        return $this->student?->primaryPhoto?->path
+            ?? $this->employee?->primaryPhoto?->path;
+    }
 }
