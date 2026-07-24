@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\AdvertisementController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\ScannerTokenController;
@@ -23,6 +24,9 @@ Route::prefix('admin')
     ->middleware('auth')
     ->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->middleware('permission:dashboard.view')->name('dashboard');
+        Route::get('/entry-monitor', [TransactionController::class, 'monitor'])->middleware('permission:transactions.view')->name('entry-monitor');
+        Route::get('/advertisements', [AdvertisementController::class, 'index'])->middleware('permission:advertisements.view')->name('advertisements.index');
+        Route::post('/advertisements', [AdvertisementController::class, 'store'])->middleware('permission:advertisements.create')->name('advertisements.store');
         Route::get('/transactions', [TransactionController::class, 'index'])->middleware('permission:transactions.view')->name('transactions.index');
         Route::get('/reports', [ReportController::class, 'index'])->middleware('permission:reports.view')->name('reports.index');
         Route::get('/reports/export', [ReportController::class, 'export'])->middleware('permission:reports.export')->name('reports.export');

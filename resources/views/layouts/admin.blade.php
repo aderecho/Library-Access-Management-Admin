@@ -6,7 +6,11 @@
     <title>{{ $title ?? 'UP Cebu RFID Admin Portal' }}</title>
     <link rel="icon" href="{{ asset('images/las-icon.png') }}" type="image/png">
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
-    @vite(['resources/js/admin-notifications.js', 'resources/js/admin-live-updates.js'])
+    <link rel="stylesheet" href="{{ asset('css/entry-monitor.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/cardholder-photos.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/recent-activity-panel.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/advertisements.css') }}">
+    @vite(['resources/js/admin-notifications.js', 'resources/js/admin-live-updates.js', 'resources/js/advertisements.js'])
 </head>
 <body>
 <div class="app-shell">
@@ -21,10 +25,14 @@
                 <a class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">Dashboard</a>
             @endif
             @if(auth()->user()->hasPermission('transactions.view'))
+                <a class="{{ request()->routeIs('admin.entry-monitor') ? 'active' : '' }}" href="{{ route('admin.entry-monitor') }}">Entry Monitor</a>
                 <a class="{{ request()->routeIs('admin.transactions.*') ? 'active' : '' }}" href="{{ route('admin.transactions.index') }}">Transactions</a>
             @endif
             @if(auth()->user()->hasPermission('reports.view'))
                 <a class="{{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}">Reports</a>
+            @endif
+            @if(auth()->user()->hasPermission('advertisements.view'))
+                <a class="{{ request()->routeIs('admin.advertisements.*') ? 'active' : '' }}" href="{{ route('admin.advertisements.index') }}">Advertisements</a>
             @endif
 
             @if(auth()->user()->hasPermission('users.view') || auth()->user()->hasPermission('roles.view') || auth()->user()->hasPermission('scanner-tokens.view'))
