@@ -39,6 +39,7 @@ class ScannerTokenManagementTest extends TestCase
             ->assertSee('Generate token');
 
         $response = $this->actingAs($admin)->post(route('admin.scanner-tokens.store'), [
+            'branch_id' => $this->defaultBranch()->id,
             'name' => 'Main Entrance Scanner',
             'device_id' => 'scanner-main-01',
         ]);
@@ -50,6 +51,7 @@ class ScannerTokenManagementTest extends TestCase
 
         $this->assertSame('Main Entrance Scanner', $scannerToken->name);
         $this->assertSame('scanner-main-01', $scannerToken->device_id);
+        $this->assertSame($this->defaultBranch()->id, $scannerToken->branch_id);
         $this->assertTrue($scannerToken->is_active);
         $this->assertSame(64, strlen($scannerToken->token_hash));
     }

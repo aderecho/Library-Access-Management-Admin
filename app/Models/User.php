@@ -11,12 +11,23 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $fillable = [
+        'branch_id',
         'name',
         'email',
         'password',
         'role_id',
         'is_active',
     ];
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function canAccessBranch(int $branchId): bool
+    {
+        return $this->role?->slug === 'super-admin' || (int) $this->branch_id === $branchId;
+    }
 
     protected $hidden = [
         'password',

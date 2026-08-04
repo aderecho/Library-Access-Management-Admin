@@ -1,0 +1,4 @@
+interface:
+  display_name: "Multi-Branch RFID"
+  short_description: "Build branch-isolated RFID monitoring"
+  default_prompt: "Use $build-multi-branch-rfid to add secure branch-scoped scanners, monitors, and live RFID events."

@@ -61,6 +61,7 @@ class ScannerTokenValidationTest extends TestCase
         $token = 'upcebu_scanner_validation_test_'.fake()->unique()->numerify('####');
 
         $scanner = ScannerToken::create([
+            'branch_id' => $this->defaultBranch()->id,
             'name' => 'Main Entrance Scanner',
             'device_id' => 'scanner-main-01',
             'token_hash' => hash('sha256', $token),

@@ -28,6 +28,10 @@
         <form method="post" action="{{ route('admin.scanner-tokens.store') }}" class="form-grid">
             @csrf
             <label>
+                Branch
+                <select name="branch_id" required><option value="">Select branch</option>@foreach($branches as $branch)<option value="{{ $branch->id }}" @selected((string) old('branch_id') === (string) $branch->id)>{{ $branch->name }}</option>@endforeach</select>
+            </label>
+            <label>
                 Scanner name
                 <input type="text" name="name" value="{{ old('name') }}" maxlength="150" required>
             </label>
@@ -56,6 +60,7 @@
             <thead>
                 <tr>
                     <th>Scanner</th>
+                    <th>Branch</th>
                     <th>Token prefix</th>
                     <th>Status</th>
                     <th>Last used</th>
@@ -72,6 +77,7 @@
                         <strong>{{ $scannerToken->name }}</strong>
                         <span class="scanner-device-id">{{ $scannerToken->device_id ?: 'No device ID' }}</span>
                     </td>
+                    <td>{{ $scannerToken->branch?->name ?? 'Unassigned' }}</td>
                     <td><code>{{ $scannerToken->token_prefix }}...</code></td>
                     <td><span class="badge {{ $scannerToken->is_active ? 'valid' : 'invalid' }}">{{ $scannerToken->is_active ? 'Active' : 'Inactive' }}</span></td>
                     <td>{{ $scannerToken->last_used_at?->format('Y-m-d H:i') ?: 'Never' }}</td>
@@ -83,6 +89,10 @@
                                 <form method="post" action="{{ route('admin.scanner-tokens.update', $scannerToken) }}" class="form-grid">
                                     @csrf
                                     @method('put')
+                                    <label>
+                                        Branch
+                                        <select name="branch_id" required>@foreach($branches as $branch)<option value="{{ $branch->id }}" @selected($scannerToken->branch_id === $branch->id)>{{ $branch->name }}</option>@endforeach</select>
+                                    </label>
                                     <label>
                                         Scanner name
                                         <input type="text" name="name" value="{{ $scannerToken->name }}" maxlength="150" required>
@@ -107,7 +117,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="{{ auth()->user()->hasPermission('scanner-tokens.update') ? 6 : 5 }}" class="muted">No scanners have been registered.</td>
+                    <td colspan="{{ auth()->user()->hasPermission('scanner-tokens.update') ? 7 : 6 }}" class="muted">No scanners have been registered.</td>
                 </tr>
             @endforelse
             </tbody>

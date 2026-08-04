@@ -18,7 +18,7 @@ class RfidScanRecorded implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('admin.rfid-scans'),
+            new PrivateChannel('branches.'.$this->transaction->branch_id.'.rfid-scans'),
         ];
     }
 
@@ -31,6 +31,7 @@ class RfidScanRecorded implements ShouldBroadcastNow
     {
         return [
             'transactionId' => $this->transaction->id,
+            'branchId' => $this->transaction->branch_id,
         ];
     }
 }

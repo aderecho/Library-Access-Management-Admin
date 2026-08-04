@@ -7,17 +7,25 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\ScannerTokenController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Api\ScannerSettingsSsoController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/admin');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'create'])->name('login');
-    Route::post('/login', [AuthController::class, 'store'])->name('login.store');
+    Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('login.google');
+    Route::get(config('services.google.callback_path'), [AuthController::class, 'handleGoogleCallback'])->name('login.google.callback');
 });
 
 Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->name('logout');
+
+Route::get('/scanner/settings/authorize/{requestId}', [ScannerSettingsSsoController::class, 'authorizeRequest'])
+    ->whereAlphaNumeric('requestId')
+    ->middleware('auth')
+    ->name('scanner.settings.authorize');
 
 Route::prefix('admin')
     ->name('admin.')
@@ -49,4 +57,7 @@ Route::prefix('admin')
         Route::post('/scanner-tokens', [ScannerTokenController::class, 'store'])->middleware('permission:scanner-tokens.create')->name('scanner-tokens.store');
         Route::put('/scanner-tokens/{scannerToken}', [ScannerTokenController::class, 'update'])->middleware('permission:scanner-tokens.update')->name('scanner-tokens.update');
         Route::post('/scanner-tokens/{scannerToken}/regenerate', [ScannerTokenController::class, 'regenerate'])->middleware('permission:scanner-tokens.update')->name('scanner-tokens.regenerate');
+        Route::get('/branches', [BranchController::class, 'index'])->middleware('permission:branches.view')->name('branches.index');
+        Route::post('/branches', [BranchController::class, 'store'])->middleware('permission:branches.create')->name('branches.store');
+        Route::put('/branches/{branch}', [BranchController::class, 'update'])->middleware('permission:branches.update')->name('branches.update');
     });

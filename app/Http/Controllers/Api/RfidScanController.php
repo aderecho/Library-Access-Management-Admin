@@ -13,6 +13,8 @@ class RfidScanController extends Controller
 {
     public function store(Request $request)
     {
+        $scannerToken = $request->attributes->get('scannerToken');
+
         $validated = $request->validate([
             'identifier' => ['required_without:rfid_code', 'string', 'max:80'],
             'rfid_code' => ['required_without:identifier', 'string', 'max:80'],
@@ -38,6 +40,7 @@ class RfidScanController extends Controller
             : ($cardholder ? 'Access denied. Please proceed to the help desk.' : 'This RFID card is not registered. Please proceed to the help desk.');
 
         $transaction = RfidTransaction::create([
+            'branch_id' => $scannerToken->branch_id,
             'student_id' => $student?->id,
             'employee_id' => $employee?->id,
             'cardholder_type' => $cardholderType,
@@ -46,6 +49,7 @@ class RfidScanController extends Controller
             'cardholder_name' => $cardholder?->name ?? 'Unregistered Card',
             'program' => $student?->program ?? $employee?->position,
             'college_department' => $student?->college ?? $employee?->office,
+            'year_level' => $student?->year_level,
             'transaction_type' => 'time_in',
             'status' => $valid ? 'valid' : 'invalid',
             'message' => $message,
@@ -66,6 +70,7 @@ class RfidScanController extends Controller
             'valid' => $valid,
             'message' => $message,
             'displayDurationMs' => 10000,
+            'branch' => $scannerToken->branch?->only(['id', 'name', 'code']),
         ]);
     }
 }

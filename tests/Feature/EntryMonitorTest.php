@@ -21,11 +21,13 @@ class EntryMonitorTest extends TestCase
         ]);
 
         $user = User::factory()->create([
+            'branch_id' => $this->defaultBranch()->id,
             'role_id' => $role->id,
             'is_active' => true,
         ]);
 
         RfidTransaction::create([
+            'branch_id' => $this->defaultBranch()->id,
             'cardholder_type' => 'student',
             'rfid_code' => '04 A3 6F 21',
             'campus_id' => '2023-12345',
@@ -45,6 +47,8 @@ class EntryMonitorTest extends TestCase
             ->assertSee('2023-12345')
             ->assertSee('04 A3 6F 21')
             ->assertSee('BS Computer Science')
+            ->assertSee('Library Branch')
+            ->assertSee($this->defaultBranch()->name)
             ->assertSee('data-activity-row', false)
             ->assertSee('data-activity-dialog', false)
             ->assertSee('College / Department');

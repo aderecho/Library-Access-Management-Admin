@@ -7,9 +7,16 @@
     $hasPhoto = $photoFile && file_exists(public_path($photoFile));
 @endphp
 
-<div class="entry-monitor" data-live-scan-page>
+@if(auth()->user()->role?->slug === 'super-admin' && $branches->count() > 1)
+<form method="get" action="{{ route('admin.entry-monitor') }}" class="panel form-grid">
+    <label>Monitoring branch<select name="branch_id" onchange="this.form.submit()">@foreach($branches as $option)<option value="{{ $option->id }}" @selected($branch->id === $option->id)>{{ $option->name }}</option>@endforeach</select></label>
+</form>
+@endif
+
+<div class="entry-monitor" data-live-scan-page data-branch-id="{{ $branch->id }}">
     <div class="monitor-toolbar" aria-live="polite">
         <span data-monitor-clock>{{ now()->format('M j, Y, g:i:s A') }}</span>
+        <span>{{ $branch?->name ?? 'All branches' }}</span>
         <span class="live-signal"><i></i> Live</span>
     </div>
 
@@ -36,6 +43,7 @@
 
                 <h2>{{ $latest->cardholder_name }}</h2>
                 <dl class="identity-fields">
+                    <div><dt>Library Branch</dt><dd>{{ $latest->branch?->name ?? $branch->name }}</dd></div>
                     <div><dt>UP Cebu ID</dt><dd>{{ $latest->campus_id ?: 'Not registered' }}</dd></div>
                     <div><dt>Scanned / Entered ID</dt><dd class="rfid-value">{{ $latest->rfid_code ?: '—' }}</dd></div>
                     <div><dt>{{ $latest->cardholder_type === 'employee' ? 'Position' : 'Program' }}</dt><dd>{{ $latest->program ?: 'Not available' }}</dd></div>
@@ -50,11 +58,12 @@
         <section class="recent-entry-list">
             <div class="recent-entry-heading"><h2>Recent Activity</h2><span>Automatically refreshes after every scan</span></div>
             <div class="table-wrap"><table>
-                <thead><tr><th>Time</th><th>Photo</th><th>Name</th><th>UP Cebu ID</th><th>Scanned / Entered ID</th><th>Program / Position</th><th>Status</th></tr></thead>
+                <thead><tr><th>Time</th><th>Branch</th><th>Photo</th><th>Name</th><th>UP Cebu ID</th><th>Scanned / Entered ID</th><th>Program / Position</th><th>Status</th></tr></thead>
                 <tbody>@foreach($recent as $transaction)<tr class="activity-row" tabindex="0" role="button" aria-haspopup="dialog" aria-label="View details for {{ $transaction->cardholder_name }}"
                     data-activity-row
                     data-photo="{{ $transaction->cardholderPhotoPath() ? asset($transaction->cardholderPhotoPath()) : '' }}"
                     data-name="{{ $transaction->cardholder_name }}"
+                    data-branch="{{ $transaction->branch?->name ?? $branch->name }}"
                     data-campus-id="{{ $transaction->campus_id ?: 'Not registered' }}"
                     data-rfid="{{ $transaction->rfid_code ?: '—' }}"
                     data-program="{{ $transaction->program ?: 'Not available' }}"
@@ -64,6 +73,7 @@
                     data-message="{{ $transaction->message }}"
                     data-scanned-at="{{ $transaction->scanned_at?->format('M j, Y · g:i:s A') }}">
                     <td>{{ $transaction->scanned_at?->format('g:i:s A') }}</td>
+                    <td><strong>{{ $transaction->branch?->name ?? $branch->name }}</strong></td>
                     <td>@if($transaction->cardholderPhotoPath())<img class="activity-photo" src="{{ asset($transaction->cardholderPhotoPath()) }}" alt="">@else<span class="activity-photo-placeholder">—</span>@endif</td>
                     <td><strong>{{ $transaction->cardholder_name }}</strong></td><td>{{ $transaction->campus_id ?: '—' }}</td><td class="rfid-table-value">{{ $transaction->rfid_code }}</td><td>{{ $transaction->program ?: '—' }}</td><td><span class="entry-status {{ $transaction->status }}">{{ $transaction->status === 'valid' ? 'Verified' : 'Denied' }}</span></td>
                 </tr>@endforeach</tbody>
@@ -88,6 +98,7 @@
                     <p class="dialog-message" data-dialog-message></p>
                     <dl class="dialog-fields">
                         <div><dt>UP Cebu ID</dt><dd data-dialog-campus-id></dd></div>
+                        <div><dt>Library Branch</dt><dd data-dialog-branch></dd></div>
                         <div><dt>Scanned / Entered ID</dt><dd class="dialog-rfid" data-dialog-rfid></dd></div>
                         <div><dt>Program / Position</dt><dd data-dialog-program></dd></div>
                         <div><dt>College / Department</dt><dd data-dialog-department></dd></div>

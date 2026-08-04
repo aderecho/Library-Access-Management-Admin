@@ -121,6 +121,10 @@ class RfidTransactionReadModel
             return false;
         }
 
+        if (($filters['branch_id'] ?? null) && (int) ($row['branch_id'] ?? 0) !== (int) $filters['branch_id']) {
+            return false;
+        }
+
         $date = substr((string) ($row['scanned_at'] ?? ''), 0, 10);
 
         return (($filters['from'] ?? '') === '' || $date >= $filters['from'])
@@ -139,6 +143,8 @@ class RfidTransactionReadModel
     private function databasePaginate(array $filters, int $perPage): LengthAwarePaginator
     {
         return RfidTransaction::query()
+            ->with('branch')
+            ->when($filters['branch_id'] ?? null, fn ($query, $branchId) => $query->where('branch_id', $branchId))
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('campus_id', 'like', "%{$search}%")

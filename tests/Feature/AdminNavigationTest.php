@@ -27,12 +27,17 @@ class AdminNavigationTest extends TestCase
             'is_active' => true,
         ]);
 
-        $response = $this->actingAs($admin)->get('/admin');
+        $response = $this
+            ->withSession(['auth.google_avatar' => 'https://lh3.googleusercontent.com/avatar.jpg'])
+            ->actingAs($admin)
+            ->get('/admin');
 
         $response->assertOk()
             ->assertSee('aria-label="Admin toolbar"', false)
             ->assertSee('placeholder="Search"', false)
             ->assertSee(route('admin.transactions.index'), false)
-            ->assertSee('Hi, Admin User');
+            ->assertSee('Admin User')
+            ->assertSee('https://lh3.googleusercontent.com/avatar.jpg', false)
+            ->assertSee('Admin User profile photo');
     }
 }

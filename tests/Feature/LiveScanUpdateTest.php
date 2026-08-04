@@ -29,6 +29,7 @@ class LiveScanUpdateTest extends TestCase
 
         $scannerToken = 'upcebu_scanner_live_test';
         ScannerToken::create([
+            'branch_id' => $this->defaultBranch()->id,
             'name' => 'Live Test Scanner',
             'token_hash' => hash('sha256', $scannerToken),
             'token_prefix' => substr($scannerToken, 0, 22),
@@ -68,17 +69,17 @@ class LiveScanUpdateTest extends TestCase
     public function test_authorized_admin_can_join_the_live_scan_channel(): void
     {
         $this->useReverbBroadcaster();
-        $authorizedAdmin = $this->createAdmin(['dashboard.view']);
+        $authorizedAdmin = $this->createAdmin(['transactions.view']);
 
         $this->actingAs($authorizedAdmin)
             ->postJson('/broadcasting/auth', [
                 'socket_id' => '1234.5678',
-                'channel_name' => 'private-admin.rfid-scans',
+                'channel_name' => 'private-branches.'.$authorizedAdmin->branch_id.'.rfid-scans',
             ])
             ->assertOk();
     }
 
-    public function test_report_viewer_can_join_the_live_scan_channel(): void
+    public function test_report_viewer_cannot_join_the_live_scan_channel_without_transaction_permission(): void
     {
         $this->useReverbBroadcaster();
         $reportViewer = $this->createAdmin(['reports.view']);
@@ -86,9 +87,9 @@ class LiveScanUpdateTest extends TestCase
         $this->actingAs($reportViewer)
             ->postJson('/broadcasting/auth', [
                 'socket_id' => '1234.5678',
-                'channel_name' => 'private-admin.rfid-scans',
+                'channel_name' => 'private-branches.'.$reportViewer->branch_id.'.rfid-scans',
             ])
-            ->assertOk();
+            ->assertForbidden();
     }
 
     public function test_unauthorized_admin_cannot_join_the_live_scan_channel(): void
@@ -99,7 +100,7 @@ class LiveScanUpdateTest extends TestCase
         $this->actingAs($unauthorizedAdmin)
             ->postJson('/broadcasting/auth', [
                 'socket_id' => '1234.5678',
-                'channel_name' => 'private-admin.rfid-scans',
+                'channel_name' => 'private-branches.'.$unauthorizedAdmin->branch_id.'.rfid-scans',
             ])
             ->assertForbidden();
     }
@@ -126,6 +127,7 @@ class LiveScanUpdateTest extends TestCase
         ]);
 
         return User::create([
+            'branch_id' => $this->defaultBranch()->id,
             'name' => 'Admin User',
             'email' => fake()->unique()->safeEmail(),
             'password' => 'password123',

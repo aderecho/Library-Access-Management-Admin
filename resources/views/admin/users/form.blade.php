@@ -11,6 +11,15 @@
             <input type="email" name="email" value="{{ old('email', $user?->email) }}" required>
         </label>
 
+        <label>Assigned branch
+            <select name="branch_id">
+                <option value="">All branches (super-admin only)</option>
+                @foreach($branches as $branch)<option value="{{ $branch->id }}" @selected((string) old('branch_id', $user?->branch_id) === (string) $branch->id)>{{ $branch->name }}</option>@endforeach
+            </select>
+            <small class="muted">Required for every non-super-admin user. Their dashboard, reports, logs, and entry monitor are limited to this branch.</small>
+            @error('branch_id')<span class="field-error">{{ $message }}</span>@enderror
+        </label>
+
         <fieldset class="user-role-selector">
             <legend>Assign user role</legend>
             <p class="muted">Select one role. The assigned permissions are shown below each role.</p>
@@ -53,14 +62,6 @@
                 @endforeach
             </div>
         </fieldset>
-
-        <label>Password {{ $user ? '(leave blank to retain current password)' : '' }}
-            <input type="password" name="password" {{ $user ? '' : 'required' }}>
-        </label>
-
-        <label>Confirm password
-            <input type="password" name="password_confirmation" {{ $user ? '' : 'required' }}>
-        </label>
 
         <label class="checkbox">
             <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $user?->is_active ?? true))>

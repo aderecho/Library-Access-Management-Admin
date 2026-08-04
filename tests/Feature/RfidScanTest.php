@@ -21,6 +21,7 @@ class RfidScanTest extends TestCase
         $this->scannerToken = 'upcebu_scanner_test_token';
 
         ScannerToken::create([
+            'branch_id' => $this->defaultBranch()->id,
             'name' => 'Test Scanner',
             'token_hash' => hash('sha256', $this->scannerToken),
             'token_prefix' => substr($this->scannerToken, 0, 22),
@@ -100,6 +101,7 @@ class RfidScanTest extends TestCase
             'campus_id' => '2026-10001',
             'rfid_code' => 'student-rfid-10001',
             'name' => 'Campus ID Student',
+            'year_level' => '4th Year',
             'is_active' => true,
         ]);
 
@@ -110,6 +112,7 @@ class RfidScanTest extends TestCase
                 'cardholderType' => 'student',
                 'campusId' => $student->campus_id,
                 'rfidCode' => $student->rfid_code,
+                'yearLevel' => $student->year_level,
                 'valid' => true,
             ]);
 
@@ -117,6 +120,7 @@ class RfidScanTest extends TestCase
             'student_id' => $student->id,
             'rfid_code' => $student->rfid_code,
             'campus_id' => $student->campus_id,
+            'year_level' => $student->year_level,
         ]);
     }
 

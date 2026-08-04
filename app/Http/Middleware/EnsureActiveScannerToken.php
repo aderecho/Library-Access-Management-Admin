@@ -27,6 +27,10 @@ class EnsureActiveScannerToken
             return response()->json(['message' => 'Scanner registration is deactivated.'], 403);
         }
 
+        if (! $scannerToken->branch_id || ! $scannerToken->branch?->is_active) {
+            return response()->json(['message' => 'Scanner is not assigned to an active branch.'], 403);
+        }
+
         $scannerToken->forceFill(['last_used_at' => now()])->save();
         $request->attributes->set('scannerToken', $scannerToken);
 

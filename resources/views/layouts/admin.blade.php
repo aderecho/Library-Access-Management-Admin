@@ -35,7 +35,7 @@
                 <a class="{{ request()->routeIs('admin.advertisements.*') ? 'active' : '' }}" href="{{ route('admin.advertisements.index') }}">Advertisements</a>
             @endif
 
-            @if(auth()->user()->hasPermission('users.view') || auth()->user()->hasPermission('roles.view') || auth()->user()->hasPermission('scanner-tokens.view'))
+            @if(auth()->user()->hasPermission('users.view') || auth()->user()->hasPermission('roles.view') || auth()->user()->hasPermission('scanner-tokens.view') || auth()->user()->hasPermission('branches.view'))
                 <div class="nav-heading">Administration</div>
                 @if(auth()->user()->hasPermission('users.view'))
                     <a class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">User Accounts</a>
@@ -45,6 +45,9 @@
                 @endif
                 @if(auth()->user()->hasPermission('scanner-tokens.view'))
                     <a class="{{ request()->routeIs('admin.scanner-tokens.*') ? 'active' : '' }}" href="{{ route('admin.scanner-tokens.index') }}">Scanner Registrations</a>
+                @endif
+                @if(auth()->user()->hasPermission('branches.view'))
+                    <a class="{{ request()->routeIs('admin.branches.*') ? 'active' : '' }}" href="{{ route('admin.branches.index') }}">Branch Configuration</a>
                 @endif
             @endif
         </nav>
@@ -74,8 +77,22 @@
             </form>
 
             <div class="topbar-profile">
-                <span>Hi, {{ auth()->user()->name }}</span>
-                <div class="topbar-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
+                <div class="topbar-profile-copy">
+                    <strong>{{ auth()->user()->name }}</strong>
+                    <span>{{ auth()->user()->role?->name ?? 'Administrator' }}</span>
+                </div>
+                @if(session('auth.google_avatar'))
+                    <img
+                        class="topbar-avatar"
+                        src="{{ session('auth.google_avatar') }}"
+                        alt="{{ auth()->user()->name }} profile photo"
+                        referrerpolicy="no-referrer"
+                    >
+                @else
+                    <div class="topbar-avatar topbar-avatar-fallback" aria-hidden="true">
+                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                    </div>
+                @endif
             </div>
         </nav>
 

@@ -22,6 +22,7 @@ class DashboardStudentChartsTest extends TestCase
         ]);
 
         $admin = User::create([
+            'branch_id' => $this->defaultBranch()->id,
             'name' => 'Dashboard Viewer',
             'email' => 'dashboard@example.com',
             'password' => 'password123',
@@ -60,6 +61,7 @@ class DashboardStudentChartsTest extends TestCase
             ->assertSee('<strong>0</strong>', false);
 
         RfidTransaction::create([
+            'branch_id' => $this->defaultBranch()->id,
             'cardholder_type' => 'unknown',
             'rfid_code' => 'cache-invalidation-test',
             'cardholder_name' => 'Unregistered Card',
@@ -84,11 +86,32 @@ class DashboardStudentChartsTest extends TestCase
         ]);
 
         return User::create([
+            'branch_id' => $this->defaultBranch()->id,
             'name' => 'Dashboard Admin',
             'email' => 'dashboard-admin@example.com',
             'password' => 'password123',
             'role_id' => $role->id,
             'is_active' => true,
         ]);
+    }
+
+    public function test_dashboard_compares_entries_per_authorized_branch(): void
+    {
+        $admin = $this->createAdmin();
+        RfidTransaction::create([
+            'branch_id' => $this->defaultBranch()->id,
+            'cardholder_type' => 'student',
+            'rfid_code' => 'branch-chart-rfid',
+            'cardholder_name' => 'Branch Chart Student',
+            'transaction_type' => 'time_in',
+            'status' => 'valid',
+            'scanned_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('Entries per Library Branch')
+            ->assertSee($this->defaultBranch()->name)
+            ->assertSee('1 verified');
     }
 }
