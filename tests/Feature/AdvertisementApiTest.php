@@ -25,6 +25,7 @@ class AdvertisementApiTest extends TestCase
         Advertisement::create([
             'title' => 'Active Campus Notice',
             'image_path' => 'advertisements/active.jpg',
+            'media_type' => 'image',
             'starts_at' => now()->subHour(),
             'ends_at' => now()->addHour(),
         ]);
@@ -44,9 +45,35 @@ class AdvertisementApiTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.title', 'Active Campus Notice')
+            ->assertJsonPath('data.0.mediaType', 'image')
+            ->assertJsonPath('data.0.mediaUrl', asset('storage/advertisements/active.jpg'))
             ->assertJsonPath('refreshAfterSeconds', 60)
             ->assertJsonMissing(['title' => 'Future Campus Notice'])
             ->assertJsonMissing(['title' => 'Ended Campus Notice']);
+    }
+
+    public function test_scanner_receives_video_media_metadata(): void
+    {
+        $token = 'upcebu_advertisement_video_api_test';
+        ScannerToken::create([
+            'branch_id' => $this->defaultBranch()->id,
+            'name' => 'Video Advertisement Kiosk',
+            'token_hash' => hash('sha256', $token),
+            'token_prefix' => substr($token, 0, 22),
+            'is_active' => true,
+        ]);
+        Advertisement::create([
+            'title' => 'Campus Video',
+            'image_path' => 'advertisements/campus.mp4',
+            'media_type' => 'video',
+        ]);
+
+        $this->withHeader('X-Scanner-Token', $token)
+            ->getJson(route('api.advertisements.index'))
+            ->assertOk()
+            ->assertJsonPath('data.0.mediaType', 'video')
+            ->assertJsonPath('data.0.mediaUrl', asset('storage/advertisements/campus.mp4'))
+            ->assertJsonPath('data.0.imageUrl', null);
     }
 
     public function test_advertisement_endpoint_requires_scanner_token(): void

@@ -35,6 +35,7 @@ Route::prefix('admin')
         Route::get('/entry-monitor', [TransactionController::class, 'monitor'])->middleware('permission:transactions.view')->name('entry-monitor');
         Route::get('/advertisements', [AdvertisementController::class, 'index'])->middleware('permission:advertisements.view')->name('advertisements.index');
         Route::post('/advertisements', [AdvertisementController::class, 'store'])->middleware('permission:advertisements.create')->name('advertisements.store');
+        Route::put('/advertisements/{advertisement}', [AdvertisementController::class, 'update'])->middleware('permission:advertisements.create')->name('advertisements.update');
         Route::get('/transactions', [TransactionController::class, 'index'])->middleware('permission:transactions.view')->name('transactions.index');
         Route::get('/reports', [ReportController::class, 'index'])->middleware('permission:reports.view')->name('reports.index');
         Route::get('/reports/export', [ReportController::class, 'export'])->middleware('permission:reports.export')->name('reports.export');

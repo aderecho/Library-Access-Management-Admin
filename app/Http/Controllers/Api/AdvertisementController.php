@@ -10,12 +10,7 @@ class AdvertisementController extends Controller
     public function index()
     {
         $advertisements = Advertisement::query()
-            ->where(function ($query) {
-                $query->whereNull('starts_at')->orWhere('starts_at', '<=', now());
-            })
-            ->where(function ($query) {
-                $query->whereNull('ends_at')->orWhere('ends_at', '>=', now());
-            })
+            ->published()
             ->latest()
             ->limit(20)
             ->get()
@@ -23,7 +18,11 @@ class AdvertisementController extends Controller
                 'id' => $advertisement->id,
                 'title' => $advertisement->title,
                 'description' => $advertisement->description,
-                'imageUrl' => asset('storage/'.$advertisement->image_path),
+                'mediaType' => $advertisement->media_type,
+                'mediaUrl' => asset('storage/'.$advertisement->image_path),
+                'imageUrl' => $advertisement->media_type === 'image'
+                    ? asset('storage/'.$advertisement->image_path)
+                    : null,
                 'startsAt' => $advertisement->starts_at?->toIso8601String(),
                 'endsAt' => $advertisement->ends_at?->toIso8601String(),
             ]);

@@ -10,7 +10,7 @@ return [
         ],
         'Advertisement management' => [
             'advertisements.view' => 'View published advertisements',
-            'advertisements.create' => 'Create advertisements and upload images',
+            'advertisements.create' => 'Create and edit image or video advertisements',
         ],
         'User management' => [
             'users.view' => 'View user accounts',

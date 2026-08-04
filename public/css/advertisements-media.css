@@ -1,0 +1,13 @@
+.advertisement-preview img,
+.advertisement-preview video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 9px;
+    object-fit: cover;
+    background: #191919;
+}
+
+.advertisement-preview [hidden] {
+    display: none;
+}
