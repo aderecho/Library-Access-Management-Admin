@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{{ asset('css/cardholder-photos.css') }}">
     <link rel="stylesheet" href="{{ asset('css/recent-activity-panel.css') }}">
     <link rel="stylesheet" href="{{ asset('css/advertisements.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/advertisements-media.css') }}">
     @vite(['resources/js/admin-notifications.js', 'resources/js/admin-live-updates.js', 'resources/js/advertisements.js'])
 </head>
 <body>

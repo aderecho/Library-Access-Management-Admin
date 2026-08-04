@@ -11,6 +11,7 @@ class Advertisement extends Model
         'title',
         'description',
         'image_path',
+        'media_type',
         'starts_at',
         'ends_at',
     ];
@@ -35,9 +36,26 @@ class Advertisement extends Model
         }
 
         if ($this->ends_at?->isPast()) {
-            return 'Ended';
+            return 'Expired';
         }
 
-        return 'Active';
+        return 'Published';
+    }
+
+    public function scopePublished($query)
+    {
+        return $query
+            ->where(fn ($query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
+            ->where(fn ($query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', now()));
+    }
+
+    public function scopeScheduled($query)
+    {
+        return $query->where('starts_at', '>', now());
+    }
+
+    public function scopeExpired($query)
+    {
+        return $query->whereNotNull('ends_at')->where('ends_at', '<', now());
     }
 }
