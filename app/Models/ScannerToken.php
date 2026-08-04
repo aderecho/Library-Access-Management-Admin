@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 class ScannerToken extends Model
 {
     protected $fillable = [
+        'branch_id',
         'name',
         'device_id',
         'token_hash',
@@ -15,6 +16,11 @@ class ScannerToken extends Model
         'is_active',
         'last_used_at',
     ];
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
     protected function casts(): array
     {

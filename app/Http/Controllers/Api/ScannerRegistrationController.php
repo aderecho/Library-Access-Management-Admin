@@ -18,6 +18,7 @@ class ScannerRegistrationController extends Controller
             'scanner' => [
                 'name' => $scanner->name,
                 'deviceId' => $scanner->device_id,
+                'branch' => $scanner->branch->only(['id', 'name', 'code']),
             ],
         ]);
     }

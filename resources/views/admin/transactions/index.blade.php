@@ -8,6 +8,11 @@
     </div>
 
     <form class="filters" method="get">
+        <select name="branch_id" @disabled(auth()->user()->role?->slug !== 'super-admin')>
+            @if(auth()->user()->role?->slug === 'super-admin')<option value="">All branches</option>@endif
+            @foreach($branches as $branch)<option value="{{ $branch->id }}" @selected((int) $branchId === $branch->id)>{{ $branch->name }}</option>@endforeach
+        </select>
+        @if(auth()->user()->role?->slug !== 'super-admin')<input type="hidden" name="branch_id" value="{{ $branchId }}">@endif
         <input name="search" value="{{ request('search') }}" placeholder="Campus ID, employee number, name, or RFID">
         <select name="status">
             <option value="">All statuses</option>
@@ -22,11 +27,12 @@
 
     <div class="table-wrap">
         <table>
-            <thead><tr><th>Scan Time</th><th>Campus ID / Employee No.</th><th>Cardholder</th><th>Category</th><th>RFID</th><th>Type</th><th>Status</th><th>Message</th></tr></thead>
+            <thead><tr><th>Scan Time</th><th>Branch Entered</th><th>Campus ID / Employee No.</th><th>Cardholder</th><th>Category</th><th>RFID</th><th>Type</th><th>Status</th><th>Message</th></tr></thead>
             <tbody>
             @forelse($transactions as $transaction)
                 <tr>
                     <td>{{ $transaction->scanned_at?->format('Y-m-d H:i:s') }}</td>
+                    <td><strong>{{ $transaction->branch?->name ?? 'Unknown branch' }}</strong></td>
                     <td>{{ $transaction->campus_id ?: '—' }}</td>
                     <td>{{ $transaction->cardholder_name }}</td>
                     <td>{{ ucfirst($transaction->cardholder_type) }}</td>
@@ -36,7 +42,7 @@
                     <td>{{ $transaction->message }}</td>
                 </tr>
             @empty
-                <tr><td colspan="8">No transactions found.</td></tr>
+                <tr><td colspan="9">No transactions found.</td></tr>
             @endforelse
             </tbody>
         </table>

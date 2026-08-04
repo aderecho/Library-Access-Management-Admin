@@ -4,12 +4,14 @@ namespace Database\Seeders;
 
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Branch;
 use Illuminate\Database\Seeder;
 
 class UserSeeder extends Seeder
 {
     public function run(): void
     {
+        $defaultBranch = Branch::firstOrCreate(['code' => 'MAIN'], ['name' => 'Main Library', 'is_active' => true]);
         $roles = collect([
             [
                 'name' => 'Super Admin',
@@ -28,6 +30,16 @@ class UserSeeder extends Seeder
                     'reports.export',
                     'advertisements.view',
                     'advertisements.create',
+                ],
+            ],
+            [
+                'name' => 'ITC-Tech',
+                'slug' => 'itc-tech',
+                'description' => 'ITC technical support role with branch configuration access.',
+                'permissions' => [
+                    'branches.view',
+                    'branches.create',
+                    'branches.update',
                 ],
             ],
             [
@@ -86,6 +98,7 @@ class UserSeeder extends Seeder
                 ['email' => $user['email']],
                 [
                     'name' => $user['name'],
+                    'branch_id' => $defaultBranch->id,
                     'role_id' => $roles[$user['role']]->id,
                     'password' => $user['password'],
                     'is_active' => $user['is_active'],

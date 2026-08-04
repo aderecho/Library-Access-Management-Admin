@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ScannerToken;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -11,15 +12,17 @@ class ScannerTokenController extends Controller
 {
     public function index()
     {
-        $scannerTokens = ScannerToken::latest()->paginate(15);
+        $scannerTokens = ScannerToken::with('branch')->latest()->paginate(15);
+        $branches = Branch::where('is_active', true)->orderBy('name')->get();
 
-        return view('admin.scanner-tokens.index', compact('scannerTokens'));
+        return view('admin.scanner-tokens.index', compact('scannerTokens', 'branches'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150'],
+            'branch_id' => ['required', 'exists:branches,id'],
             'device_id' => ['nullable', 'string', 'max:150', 'unique:scanner_tokens,device_id'],
         ]);
 
@@ -40,6 +43,7 @@ class ScannerTokenController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150'],
+            'branch_id' => ['required', 'exists:branches,id'],
             'device_id' => ['nullable', 'string', 'max:150', Rule::unique('scanner_tokens', 'device_id')->ignore($scannerToken->id)],
             'is_active' => ['nullable', 'boolean'],
         ]);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\RfidTransaction;
+use App\Models\Branch;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -25,8 +26,10 @@ class ReportController extends Controller
     public function index(Request $request)
     {
         [$from, $to, $period] = $this->resolveRange($request);
+        [$branches, $branchId] = $this->resolveBranchScope($request);
 
-        $query = RfidTransaction::whereBetween('scanned_at', [$from, $to]);
+        $query = RfidTransaction::whereBetween('scanned_at', [$from, $to])
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId));
 
         $summaryKey = implode(':', [
             'reports',
@@ -34,6 +37,7 @@ class ReportController extends Controller
             RfidTransaction::cacheVersion(),
             $from->timestamp,
             $to->timestamp,
+            $branchId ?: 'all',
         ]);
 
         $summary = Cache::remember($summaryKey, now()->addMinutes(5), function () use ($query, $period, $from, $to) {
@@ -51,64 +55,78 @@ class ReportController extends Controller
         $cardholders = (clone $query)
             ->whereNotNull('campus_id')
             ->select([
+                'branch_id',
                 'campus_id',
                 'cardholder_name',
                 'cardholder_type',
                 'program',
                 'college_department',
+                'year_level',
             ])
             ->selectRaw('COUNT(*) as frequency')
             ->groupBy([
+                'branch_id',
                 'campus_id',
                 'cardholder_name',
                 'cardholder_type',
                 'program',
                 'college_department',
+                'year_level',
             ])
             ->orderByDesc('frequency')
             ->orderBy('cardholder_name')
+            ->with('branch')
             ->paginate(20)
             ->withQueryString();
 
-        return view('admin.reports.index', compact('summary', 'cardholders'));
+        return view('admin.reports.index', compact('summary', 'cardholders', 'branches', 'branchId'));
     }
 
     public function export(Request $request): StreamedResponse
     {
         [$from, $to, $period] = $this->resolveRange($request);
+        [, $branchId] = $this->resolveBranchScope($request);
 
         $filename = "rfid-{$period}-report-".now()->format('Ymd-His').'.csv';
 
-        return response()->streamDownload(function () use ($from, $to) {
+        return response()->streamDownload(function () use ($from, $to, $branchId) {
             $output = fopen('php://output', 'w');
-            fputcsv($output, ['Student/Employee Number', 'Name', 'Program', 'College/Department', 'Frequency']);
+            fputcsv($output, ['Branch', 'Student/Employee Number', 'Name', 'Program', 'College/Department', 'Year Level', 'Frequency']);
 
             RfidTransaction::whereBetween('scanned_at', [$from, $to])
+                ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
                 ->whereNotNull('campus_id')
                 ->select([
+                    'branch_id',
                     'campus_id',
                     'cardholder_name',
                     'cardholder_type',
                     'program',
                     'college_department',
+                    'year_level',
                 ])
                 ->selectRaw('COUNT(*) as frequency')
                 ->groupBy([
+                    'branch_id',
                     'campus_id',
                     'cardholder_name',
                     'cardholder_type',
                     'program',
                     'college_department',
+                    'year_level',
                 ])
                 ->orderByDesc('frequency')
                 ->orderBy('cardholder_name')
+                ->with('branch')
                 ->chunk(500, function ($cardholders) use ($output) {
                     foreach ($cardholders as $cardholder) {
                         fputcsv($output, [
+                            $cardholder->branch?->name ?? 'Unknown branch',
                             $cardholder->campus_id,
                             $cardholder->cardholder_name,
                             $cardholder->program,
                             $cardholder->college_department,
+                            $cardholder->year_level,
                             $cardholder->frequency,
                         ]);
                     }
@@ -121,29 +139,32 @@ class ReportController extends Controller
     public function exportExcel(Request $request): BinaryFileResponse
     {
         [$from, $to, $period] = $this->resolveRange($request);
-        $cardholders = $this->cardholderFrequency($from, $to)->get();
+        [, $branchId] = $this->resolveBranchScope($request);
+        $cardholders = $this->cardholderFrequency($from, $to, $branchId)->get();
         $spreadsheet = new Spreadsheet;
         $reportSheet = $spreadsheet->getActiveSheet()->setTitle('Report');
 
         $reportSheet->fromArray([
-            ['Student/Employee Number', 'Name', 'Program', 'College/Department', 'Frequency'],
+            ['Branch', 'Student/Employee Number', 'Name', 'Program', 'College/Department', 'Year Level', 'Frequency'],
             ...$cardholders->map(fn ($cardholder) => [
+                $cardholder->branch?->name ?? 'Unknown branch',
                 $cardholder->campus_id,
                 $cardholder->cardholder_name,
                 $cardholder->program,
                 $cardholder->college_department,
+                $cardholder->year_level,
                 (int) $cardholder->frequency,
             ])->all(),
         ]);
 
         $reportSheet->freezePane('A2');
-        $reportSheet->setAutoFilter('A1:E'.max(1, $cardholders->count() + 1));
-        $reportSheet->getStyle('A1:E1')->applyFromArray([
+        $reportSheet->setAutoFilter('A1:G'.max(1, $cardholders->count() + 1));
+        $reportSheet->getStyle('A1:G1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '68000B']],
         ]);
 
-        foreach (range('A', 'E') as $column) {
+        foreach (range('A', 'G') as $column) {
             $reportSheet->getColumnDimension($column)->setAutoSize(true);
         }
 
@@ -151,6 +172,7 @@ class ReportController extends Controller
         $topCardholders = $cardholders->take(10)->values();
         $programs = $this->groupFrequency($cardholders, 'program')->take(10)->values();
         $colleges = $this->groupFrequency($cardholders, 'college_department')->take(10)->values();
+        $branchEntries = $this->groupFrequency($cardholders, 'branch_name')->values();
 
         $this->addChartData($chartSheet, 'A1', 'Top Cardholder Frequency', $topCardholders->map(fn ($item) => [
             'label' => $item->cardholder_name,
@@ -158,10 +180,12 @@ class ReportController extends Controller
         ]));
         $this->addChartData($chartSheet, 'D1', 'Program / Position Frequency', $programs);
         $this->addChartData($chartSheet, 'G1', 'College / Department Frequency', $colleges);
+        $this->addChartData($chartSheet, 'J1', 'Entries per Branch', $branchEntries);
 
         $this->addBarChart($chartSheet, 'cardholder_frequency', 'Top Cardholder Frequency', 'A', 'B', $topCardholders->count(), 'A14', 'H32');
         $this->addBarChart($chartSheet, 'program_frequency', 'Program / Position Frequency', 'D', 'E', $programs->count(), 'I14', 'P32');
         $this->addBarChart($chartSheet, 'college_frequency', 'College / Department Frequency', 'G', 'H', $colleges->count(), 'A34', 'H52');
+        $this->addBarChart($chartSheet, 'branch_frequency', 'Entries per Branch', 'J', 'K', $branchEntries->count(), 'I34', 'P52');
 
         $filename = "rfid-{$period}-report-with-graphs-".now()->format('Ymd-His').'.xlsx';
         $path = tempnam(sys_get_temp_dir(), 'rfid-report-').'.xlsx';
@@ -177,25 +201,31 @@ class ReportController extends Controller
         )->deleteFileAfterSend(true);
     }
 
-    private function cardholderFrequency(Carbon $from, Carbon $to)
+    private function cardholderFrequency(Carbon $from, Carbon $to, ?int $branchId = null)
     {
         return RfidTransaction::whereBetween('scanned_at', [$from, $to])
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
             ->whereNotNull('campus_id')
             ->select([
+                'branch_id',
                 'campus_id',
                 'cardholder_name',
                 'cardholder_type',
                 'program',
                 'college_department',
+                'year_level',
             ])
             ->selectRaw('COUNT(*) as frequency')
             ->groupBy([
+                'branch_id',
                 'campus_id',
                 'cardholder_name',
                 'cardholder_type',
                 'program',
                 'college_department',
+                'year_level',
             ])
+            ->with('branch')
             ->orderByDesc('frequency')
             ->orderBy('cardholder_name');
     }
@@ -203,7 +233,13 @@ class ReportController extends Controller
     private function groupFrequency(Collection $cardholders, string $field): Collection
     {
         return $cardholders
-            ->groupBy(fn ($cardholder) => filled($cardholder->{$field}) ? $cardholder->{$field} : 'Not specified')
+            ->groupBy(function ($cardholder) use ($field) {
+                if ($field === 'branch_name') {
+                    return $cardholder->branch?->name ?? 'Unknown branch';
+                }
+
+                return filled($cardholder->{$field}) ? $cardholder->{$field} : 'Not specified';
+            })
             ->map(fn (Collection $items, string $label) => [
                 'label' => $label,
                 'total' => $items->sum('frequency'),
@@ -272,5 +308,22 @@ class ReportController extends Controller
             ],
             default => [now()->startOfDay(), now()->endOfDay(), 'daily'],
         };
+    }
+
+    private function resolveBranchScope(Request $request): array
+    {
+        $user = $request->user();
+
+        if ($user->role?->slug !== 'super-admin') {
+            abort_unless($user->branch_id && $user->branch?->is_active, 403, 'An active branch assignment is required.');
+
+            return [collect([$user->branch]), (int) $user->branch_id];
+        }
+
+        $branches = Branch::where('is_active', true)->orderBy('name')->get();
+        $branchId = $request->filled('branch_id') ? $request->integer('branch_id') : null;
+        abort_if($branchId && ! $branches->contains('id', $branchId), 403, 'The selected branch is not available.');
+
+        return [$branches, $branchId];
     }
 }

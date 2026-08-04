@@ -1,7 +1,7 @@
 @extends('layouts.admin', ['heading' => 'Dashboard'])
 
 @section('content')
-<div data-live-scan-page>
+<div data-live-scan-page data-branch-ids="{{ $branchChart->pluck('id')->implode(',') }}">
 <div class="metric-grid">
     <article class="metric"><span>Scans Today</span><strong>{{ number_format($metrics['today_scans']) }}</strong></article>
     <article class="metric"><span>Valid Today</span><strong>{{ number_format($metrics['today_valid']) }}</strong></article>
@@ -103,6 +103,37 @@
     </div>
 </section>
 
+<section class="panel branch-comparison-panel">
+    <div class="panel-heading">
+        <div>
+            <span class="eyebrow">Current month by facility</span>
+            <h2>Entries per Library Branch</h2>
+            <p class="muted">Direct comparison of verified and denied RFID entries for {{ now()->format('F Y') }}.</p>
+        </div>
+    </div>
+    @php($branchMax = max(1, $branchChart->max('total')))
+    <div class="branch-bars" role="img" aria-label="Entries per library branch for {{ now()->format('F Y') }}">
+        @forelse($branchChart as $item)
+            <article class="branch-bar-row">
+                <div class="branch-bar-label"><strong>{{ $item['label'] }}</strong><span>{{ $item['code'] }}</span></div>
+                <div class="branch-bar-track" aria-hidden="true"><span style="width: {{ round(($item['total'] / $branchMax) * 100) }}%"></span></div>
+                <div class="branch-bar-values">
+                    <strong>{{ number_format($item['total']) }}</strong>
+                    <span>{{ number_format($item['valid']) }} verified · {{ number_format($item['invalid']) }} denied</span>
+                </div>
+            </article>
+        @empty
+            <p class="muted">No active branches are available.</p>
+        @endforelse
+    </div>
+    <div class="comparison-table-wrap">
+        <table class="comparison-table">
+            <thead><tr><th>Branch</th><th>Total entries</th><th>Verified</th><th>Denied</th></tr></thead>
+            <tbody>@foreach($branchChart as $item)<tr><th>{{ $item['label'] }}</th><td>{{ number_format($item['total']) }}</td><td>{{ number_format($item['valid']) }}</td><td>{{ number_format($item['invalid']) }}</td></tr>@endforeach</tbody>
+        </table>
+    </div>
+</section>
+
 <section class="panel student-distribution-panel">
     <div class="panel-heading">
         <div>
@@ -167,6 +198,7 @@
                 <div>
                     <span class="status-dot {{ $transaction->status }}"></span>
                     <strong>{{ $transaction->cardholder_name }}</strong>
+                    <span>{{ $transaction->branch?->name ?? 'Unknown branch' }}</span>
                     <small>{{ $transaction->scanned_at?->format('M d, H:i') }}</small>
                 </div>
             @empty

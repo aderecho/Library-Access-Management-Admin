@@ -1,7 +1,7 @@
 @extends('layouts.admin', ['heading' => 'Reports'])
 
 @section('content')
-<div data-live-scan-page>
+<div data-live-scan-page data-branch-ids="{{ $branchId ?: $branches->pluck('id')->implode(',') }}">
 <section class="panel">
     <div class="panel-heading">
         <div><span class="eyebrow">Daily, monthly, and yearly</span><h2>RFID Usage Reports</h2></div>
@@ -14,6 +14,11 @@
     </div>
 
     <form class="filters" method="get">
+        <select name="branch_id" @disabled(auth()->user()->role?->slug !== 'super-admin')>
+            @if(auth()->user()->role?->slug === 'super-admin')<option value="">All branches</option>@endif
+            @foreach($branches as $branch)<option value="{{ $branch->id }}" @selected((int) $branchId === $branch->id)>{{ $branch->name }}</option>@endforeach
+        </select>
+        @if(auth()->user()->role?->slug !== 'super-admin')<input type="hidden" name="branch_id" value="{{ $branchId }}">@endif
         <select name="period">
             <option value="daily" @selected(request('period', 'daily') === 'daily')>Daily</option>
             <option value="monthly" @selected(request('period') === 'monthly')>Monthly</option>
@@ -32,22 +37,24 @@
         <article class="metric"><span>Unique Users</span><strong>{{ number_format($summary['unique_users']) }}</strong></article>
     </div>
 
-    <p class="muted">Range: {{ $summary['from']->format('Y-m-d H:i') }} to {{ $summary['to']->format('Y-m-d H:i') }}</p>
+    <p class="muted">Branch: {{ $branchId ? ($branches->firstWhere('id', $branchId)?->name ?? 'Unknown') : 'All branches' }} · Range: {{ $summary['from']->format('Y-m-d H:i') }} to {{ $summary['to']->format('Y-m-d H:i') }}</p>
 
     <div class="table-wrap">
         <table>
-            <thead><tr><th>Student/Employee Number</th><th>Name</th><th>Program</th><th>College/Department</th><th>Frequency</th></tr></thead>
+            <thead><tr><th>Branch Entered</th><th>Student/Employee Number</th><th>Name</th><th>Program</th><th>College/Department</th><th>Year Level</th><th>Frequency</th></tr></thead>
             <tbody>
             @forelse($cardholders as $cardholder)
                 <tr>
+                    <td><strong>{{ $cardholder->branch?->name ?? 'Unknown branch' }}</strong></td>
                     <td>{{ $cardholder->campus_id }}</td>
                     <td>{{ $cardholder->cardholder_name }}</td>
                     <td>{{ $cardholder->program ?: '—' }}</td>
                     <td>{{ $cardholder->college_department ?: '—' }}</td>
+                    <td>{{ $cardholder->year_level ?: '—' }}</td>
                     <td>{{ number_format($cardholder->frequency) }}</td>
                 </tr>
             @empty
-                <tr><td colspan="5">No report data found.</td></tr>
+                <tr><td colspan="7">No report data found.</td></tr>
             @endforelse
             </tbody>
         </table>

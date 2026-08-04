@@ -15,6 +15,7 @@ class AdvertisementApiTest extends TestCase
     {
         $token = 'upcebu_advertisement_api_test';
         ScannerToken::create([
+            'branch_id' => $this->defaultBranch()->id,
             'name' => 'Advertisement Kiosk',
             'token_hash' => hash('sha256', $token),
             'token_prefix' => substr($token, 0, 22),

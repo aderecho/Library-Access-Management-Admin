@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\User as SocialiteUser;
 use Tests\TestCase;
 
 class RolePermissionTest extends TestCase
@@ -20,6 +22,7 @@ class RolePermissionTest extends TestCase
         ]);
 
         $user = User::create([
+            'branch_id' => $this->defaultBranch()->id,
             'name' => 'Report Viewer',
             'email' => 'viewer@example.com',
             'password' => 'password123',
@@ -41,6 +44,7 @@ class RolePermissionTest extends TestCase
         ]);
 
         $user = User::create([
+            'branch_id' => $this->defaultBranch()->id,
             'name' => 'Super Admin',
             'email' => 'super@example.com',
             'password' => 'password123',
@@ -51,7 +55,7 @@ class RolePermissionTest extends TestCase
         $this->assertTrue($user->hasPermission('roles.update'));
     }
 
-    public function test_report_viewer_is_redirected_to_first_permitted_page_after_login(): void
+    public function test_report_viewer_is_redirected_to_first_permitted_page_after_sso_login(): void
     {
         $role = Role::create([
             'name' => 'Report Viewer',
@@ -59,7 +63,7 @@ class RolePermissionTest extends TestCase
             'permissions' => ['reports.view'],
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => 'Report Viewer',
             'email' => 'reports@example.com',
             'password' => 'password123',
@@ -67,9 +71,13 @@ class RolePermissionTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->post('/login', [
-            'email' => 'reports@example.com',
-            'password' => 'password123',
-        ])->assertRedirect(route('admin.reports.index'));
+        Socialite::fake('google', (new SocialiteUser)->map([
+            'id' => 'google-report-viewer',
+            'name' => $user->name,
+            'email' => $user->email,
+        ]));
+
+        $this->get(route('login.google.callback'))
+            ->assertRedirect(route('admin.reports.index'));
     }
 }

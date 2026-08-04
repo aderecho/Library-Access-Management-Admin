@@ -18,8 +18,11 @@ if (monitorClock) {
 
 if (liveScanPage) {
     let reloadScheduled = false;
+    const branchIds = (liveScanPage.dataset.branchIds || liveScanPage.dataset.branchId || '')
+        .split(',')
+        .filter(Boolean);
 
-    window.Echo.private('admin.rfid-scans')
+    branchIds.forEach((branchId) => window.Echo.private(`branches.${branchId}.rfid-scans`)
         .listen('.rfid.scan.recorded', () => {
             if (reloadScheduled) {
                 return;
@@ -27,7 +30,7 @@ if (liveScanPage) {
 
             reloadScheduled = true;
             window.setTimeout(() => window.location.reload(), 250);
-        });
+        }));
 }
 
 const activityDialog = document.querySelector('[data-activity-dialog]');
@@ -48,6 +51,7 @@ if (activityDialog) {
         setText('[data-dialog-name]', data.name);
         setText('[data-dialog-message]', data.message);
         setText('[data-dialog-campus-id]', data.campusId);
+        setText('[data-dialog-branch]', data.branch);
         setText('[data-dialog-rfid]', data.rfid);
         setText('[data-dialog-program]', data.program);
         setText('[data-dialog-department]', data.department);

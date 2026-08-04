@@ -6,12 +6,14 @@ use App\Models\Employee;
 use App\Models\RfidTransaction;
 use App\Models\Role;
 use App\Models\Student;
+use App\Models\Branch;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $defaultBranch = Branch::firstOrCreate(['code' => 'MAIN'], ['name' => 'Main Library', 'is_active' => true]);
         Role::firstOrCreate(
             ['slug' => 'super-admin'],
             ['name' => 'Super Admin', 'description' => 'Full access, including user accounts and roles.']
@@ -20,6 +22,11 @@ class DatabaseSeeder extends Seeder
         Role::firstOrCreate(
             ['slug' => 'admin'],
             ['name' => 'Admin', 'description' => 'Access to dashboard, transactions, and reports.']
+        );
+
+        Role::firstOrCreate(
+            ['slug' => 'itc-tech'],
+            ['name' => 'ITC-Tech', 'description' => 'ITC technical support role with branch configuration access.']
         );
 
         Role::firstOrCreate(
@@ -45,6 +52,7 @@ class DatabaseSeeder extends Seeder
                     : $activeStudents[$index % $activeStudents->count()];
 
                 RfidTransaction::create([
+                    'branch_id' => $defaultBranch->id,
                     'student_id' => $isEmployeeScan ? null : $cardholder->id,
                     'employee_id' => $isEmployeeScan ? $cardholder->id : null,
                     'rfid_code' => $cardholder->rfid_code,
@@ -53,6 +61,7 @@ class DatabaseSeeder extends Seeder
                     'cardholder_name' => $cardholder->name,
                     'program' => $isEmployeeScan ? $cardholder->position : $cardholder->program,
                     'college_department' => $isEmployeeScan ? $cardholder->office : $cardholder->college,
+                    'year_level' => $isEmployeeScan ? null : $cardholder->year_level,
                     'transaction_type' => 'time_in',
                     'status' => 'valid',
                     'message' => 'Library entry recorded successfully.',
@@ -61,6 +70,7 @@ class DatabaseSeeder extends Seeder
             }
 
             RfidTransaction::create([
+                'branch_id' => $defaultBranch->id,
                 'rfid_code' => '0000000000',
                 'cardholder_type' => 'unknown',
                 'cardholder_name' => 'Unregistered Card',
@@ -72,9 +82,10 @@ class DatabaseSeeder extends Seeder
         }
 
         if (! RfidTransaction::whereNotNull('employee_id')->exists()) {
-            Employee::where('is_active', true)->get()->each(function (Employee $employee, int $index) {
+            Employee::where('is_active', true)->get()->each(function (Employee $employee, int $index) use ($defaultBranch) {
                 foreach (range(1, $index + 1) as $scan) {
                     RfidTransaction::create([
+                        'branch_id' => $defaultBranch->id,
                         'employee_id' => $employee->id,
                         'rfid_code' => $employee->rfid_code,
                         'campus_id' => $employee->employee_number,

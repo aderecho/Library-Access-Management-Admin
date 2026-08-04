@@ -10,6 +10,7 @@ class RfidTransaction extends Model
     private const CACHE_VERSION_KEY = 'rfid-transactions:version';
 
     protected $fillable = [
+        'branch_id',
         'student_id',
         'employee_id',
         'cardholder_type',
@@ -18,11 +19,17 @@ class RfidTransaction extends Model
         'cardholder_name',
         'program',
         'college_department',
+        'year_level',
         'transaction_type',
         'status',
         'message',
         'scanned_at',
     ];
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
     protected function casts(): array
     {

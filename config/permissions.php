@@ -27,5 +27,10 @@ return [
             'scanner-tokens.create' => 'Generate scanner registration tokens',
             'scanner-tokens.update' => 'Activate, deactivate, and regenerate scanner tokens',
         ],
+        'Branch management' => [
+            'branches.view' => 'View library branches',
+            'branches.create' => 'Create library branches',
+            'branches.update' => 'Edit and deactivate library branches',
+        ],
     ],
 ];
