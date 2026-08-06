@@ -254,6 +254,29 @@ class RfidScanTest extends TestCase
             ]);
     }
 
+    public function test_blank_amis_origin_falls_back_to_the_application_url(): void
+    {
+        config()->set('services.amis.origin', '');
+        config()->set('app.url', 'https://las-fallback.example');
+
+        Http::fake([
+            'http://localhost:8001/api/student-info/207777777' => Http::response([
+                'message' => 'Student not found',
+            ], 404),
+        ]);
+
+        $this->withHeader('X-Scanner-Token', $this->scannerToken)
+            ->postJson('/api/rfid/scan', ['identifier' => '207777777'])
+            ->assertOk()
+            ->assertJson([
+                'verificationSource' => 'amis',
+                'verificationStatus' => 'not_found',
+                'valid' => false,
+            ]);
+
+        Http::assertSent(fn ($request) => $request->hasHeader('Origin', 'https://las-fallback.example'));
+    }
+
     public function test_non_student_identifiers_do_not_call_amis(): void
     {
         $this->withHeader('X-Scanner-Token', $this->scannerToken)
