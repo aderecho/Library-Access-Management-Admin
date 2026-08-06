@@ -2,16 +2,21 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPersonName;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, HasPersonName, Notifiable;
 
     protected $fillable = [
         'branch_id',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'suffix',
         'name',
         'email',
         'password',

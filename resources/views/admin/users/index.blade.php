@@ -11,11 +11,14 @@
 
     <div class="table-wrap">
         <table>
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Assigned Branch</th><th>Status</th><th>Created</th><th></th></tr></thead>
+            <thead><tr><th>First Name</th><th>Middle Name</th><th>Last Name</th><th>Suffix</th><th>Email</th><th>Role</th><th>Assigned Branch</th><th>Status</th><th>Created</th><th></th></tr></thead>
             <tbody>
             @foreach($users as $user)
                 <tr>
-                    <td>{{ $user->name }}</td>
+                    <td>{{ $user->first_name }}</td>
+                    <td>{{ $user->middle_name ?: '—' }}</td>
+                    <td>{{ $user->last_name }}</td>
+                    <td>{{ $user->suffix ?: '—' }}</td>
                     <td>{{ $user->email }}</td>
                     <td>{{ $user->role?->name ?: '—' }}</td>
                     <td><strong>{{ $user->role?->slug === 'super-admin' ? 'All branches' : ($user->branch?->name ?? 'Unassigned') }}</strong></td>

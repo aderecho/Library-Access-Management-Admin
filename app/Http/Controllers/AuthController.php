@@ -88,6 +88,16 @@ class AuthController extends Controller
         return redirect()->route('login');
     }
 
+    public function keepAlive(Request $request)
+    {
+        $request->session()->put('session_last_extended_at', now()->timestamp);
+
+        return response()->json([
+            'message' => 'Session extended.',
+            'expires_at' => now()->addMinutes((int) config('session.lifetime'))->timestamp,
+        ]);
+    }
+
     private function defaultDestination($user): string
     {
         $destinations = [

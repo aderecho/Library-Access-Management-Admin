@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\Role;
 use App\Models\User;
-use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -32,7 +32,10 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:150'],
+            'first_name' => ['required', 'string', 'max:80'],
+            'middle_name' => ['nullable', 'string', 'max:80'],
+            'last_name' => ['required', 'string', 'max:80'],
+            'suffix' => ['nullable', 'string', 'max:30'],
             'email' => ['required', 'email', 'max:150', 'unique:users,email'],
             'role_id' => ['required', 'exists:roles,id'],
             'branch_id' => ['nullable', Rule::exists('branches', 'id')->where('is_active', true)],
@@ -60,7 +63,10 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:150'],
+            'first_name' => ['required', 'string', 'max:80'],
+            'middle_name' => ['nullable', 'string', 'max:80'],
+            'last_name' => ['required', 'string', 'max:80'],
+            'suffix' => ['nullable', 'string', 'max:30'],
             'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($user->id)],
             'role_id' => ['required', 'exists:roles,id'],
             'branch_id' => ['nullable', Rule::exists('branches', 'id')->where('is_active', true)],
