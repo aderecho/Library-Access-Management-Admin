@@ -12,7 +12,7 @@ class AmisStudentVerifier
     public function verify(string $campusId): array
     {
         $baseUrl = rtrim((string) config('services.amis.base_url'), '/');
-        $origin = rtrim((string) config('services.amis.origin'), '/');
+        $origin = rtrim((string) (config('services.amis.origin') ?: config('app.url', 'http://localhost:8000')), '/');
         $startedAt = microtime(true);
         $logContext = [
             'base_url' => $baseUrl,

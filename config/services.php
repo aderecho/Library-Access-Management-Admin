@@ -36,7 +36,7 @@ return [
 
     'amis' => [
         'base_url' => env('AMIS_BASE_URL', 'http://localhost:8001'),
-        'origin' => env('AMIS_ORIGIN', env('APP_URL', 'http://localhost:8000')),
+        'origin' => env('AMIS_ORIGIN') ?: env('APP_URL', 'http://localhost:8000'),
         'connect_timeout_seconds' => (int) env('AMIS_CONNECT_TIMEOUT_SECONDS', 2),
         'timeout_seconds' => (int) env('AMIS_TIMEOUT_SECONDS', 4),
     ],
