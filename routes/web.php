@@ -21,6 +21,7 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->name('logout');
+Route::post('/session/keep-alive', [AuthController::class, 'keepAlive'])->middleware('auth')->name('session.keep-alive');
 
 Route::get('/scanner/settings/authorize/{requestId}', [ScannerSettingsSsoController::class, 'authorizeRequest'])
     ->whereAlphaNumeric('requestId')

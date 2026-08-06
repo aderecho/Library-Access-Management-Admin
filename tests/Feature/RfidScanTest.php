@@ -34,7 +34,10 @@ class RfidScanTest extends TestCase
         $employee = Employee::create([
             'employee_number' => 'UPCEBU-EMP-100',
             'rfid_code' => 'employee-active-rfid',
-            'name' => 'Active Employee',
+            'first_name' => 'Alex',
+            'middle_name' => 'Rivera',
+            'last_name' => 'Employee',
+            'suffix' => 'Jr.',
             'position' => 'Faculty Member',
             'office' => 'College of Science',
             'status' => 'Active Employee',
@@ -49,7 +52,11 @@ class RfidScanTest extends TestCase
             ->assertJson([
                 'cardholderType' => 'employee',
                 'campusId' => $employee->employee_number,
-                'name' => $employee->name,
+                'name' => $employee->full_name,
+                'firstName' => 'Alex',
+                'middleName' => 'Rivera',
+                'lastName' => 'Employee',
+                'suffix' => 'Jr.',
                 'program' => $employee->position,
                 'college' => $employee->office,
                 'yearLevel' => 'Employee',
@@ -61,7 +68,7 @@ class RfidScanTest extends TestCase
             'employee_id' => $employee->id,
             'student_id' => null,
             'cardholder_type' => 'employee',
-            'cardholder_name' => $employee->name,
+            'cardholder_name' => $employee->full_name,
             'campus_id' => $employee->employee_number,
             'status' => 'valid',
         ]);

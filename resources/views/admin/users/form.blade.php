@@ -3,9 +3,27 @@
         @csrf
         @if($method === 'put') @method('put') @endif
 
-        <label>Name
-            <input name="name" value="{{ old('name', $user?->name) }}" required>
-        </label>
+        <div class="person-name-grid">
+            <label>First name
+                <input name="first_name" value="{{ old('first_name', $user?->first_name) }}" maxlength="80" required>
+                @error('first_name')<span class="field-error">{{ $message }}</span>@enderror
+            </label>
+
+            <label>Middle name
+                <input name="middle_name" value="{{ old('middle_name', $user?->middle_name) }}" maxlength="80">
+                @error('middle_name')<span class="field-error">{{ $message }}</span>@enderror
+            </label>
+
+            <label>Last name
+                <input name="last_name" value="{{ old('last_name', $user?->last_name) }}" maxlength="80" required>
+                @error('last_name')<span class="field-error">{{ $message }}</span>@enderror
+            </label>
+
+            <label>Suffix
+                <input name="suffix" value="{{ old('suffix', $user?->suffix) }}" maxlength="30" placeholder="Jr., Sr., III">
+                @error('suffix')<span class="field-error">{{ $message }}</span>@enderror
+            </label>
+        </div>
 
         <label>Email
             <input type="email" name="email" value="{{ old('email', $user?->email) }}" required>

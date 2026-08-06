@@ -7,19 +7,30 @@
     $hasPhoto = $photoFile && file_exists(public_path($photoFile));
 @endphp
 
-@if(auth()->user()->role?->slug === 'super-admin' && $branches->count() > 1)
-<form method="get" action="{{ route('admin.entry-monitor') }}" class="panel form-grid">
-    <label>Monitoring branch<select name="branch_id" onchange="this.form.submit()">@foreach($branches as $option)<option value="{{ $option->id }}" @selected($branch->id === $option->id)>{{ $option->name }}</option>@endforeach</select></label>
-</form>
-@endif
-
-<div class="entry-monitor" data-live-scan-page data-branch-id="{{ $branch->id }}">
-    <div class="monitor-toolbar" aria-live="polite">
-        <span data-monitor-clock>{{ now()->format('M j, Y, g:i:s A') }}</span>
-        <span>{{ $branch?->name ?? 'All branches' }}</span>
-        <span class="live-signal"><i></i> Live</span>
+<section class="monitor-control-bar" aria-label="Entry monitor controls">
+    <div class="monitor-branch-control">
+        <span class="monitor-control-label">Monitoring branch</span>
+        @if(auth()->user()->role?->slug === 'super-admin' && $branches->count() > 1)
+            <form method="get" action="{{ route('admin.entry-monitor') }}" class="monitor-branch-form">
+                <label class="sr-only" for="monitor-branch-select">Monitoring branch</label>
+                <select id="monitor-branch-select" name="branch_id" onchange="this.form.submit()">
+                    @foreach($branches as $option)
+                        <option value="{{ $option->id }}" @selected($branch->id === $option->id)>{{ $option->name }}</option>
+                    @endforeach
+                </select>
+            </form>
+        @else
+            <strong class="monitor-branch-name">{{ $branch?->name ?? 'All branches' }}</strong>
+        @endif
     </div>
 
+    <div class="monitor-toolbar" aria-live="polite">
+        <span data-monitor-clock>{{ now()->format('M j, Y, g:i:s A') }}</span>
+        <span class="live-signal"><i></i> Live</span>
+    </div>
+</section>
+
+<div class="entry-monitor" data-live-scan-page data-branch-id="{{ $branch->id }}">
     @if($latest)
         <section class="identity-stage {{ $isValid ? 'is-valid' : 'is-invalid' }}" aria-label="Latest RFID scan">
             <div class="identity-photo-wrap">

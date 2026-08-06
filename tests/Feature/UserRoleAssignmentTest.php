@@ -64,6 +64,10 @@ class UserRoleAssignmentTest extends TestCase
         $this->actingAs($superAdmin)
             ->get('/admin/users/create')
             ->assertOk()
+            ->assertSee('name="first_name"', false)
+            ->assertSee('name="middle_name"', false)
+            ->assertSee('name="last_name"', false)
+            ->assertSee('name="suffix"', false)
             ->assertSee('Assign user role')
             ->assertSee('2 permissions')
             ->assertSee('2 allowed')
@@ -71,7 +75,10 @@ class UserRoleAssignmentTest extends TestCase
             ->assertDontSee('name="password_confirmation"', false);
 
         $response = $this->actingAs($superAdmin)->post('/admin/users', [
-            'name' => 'New Admin',
+            'first_name' => 'New',
+            'middle_name' => 'Portal',
+            'last_name' => 'Admin',
+            'suffix' => 'Jr.',
             'email' => 'new-admin@example.com',
             'role_id' => $adminRole->id,
             'branch_id' => $this->defaultBranch()->id,
@@ -80,6 +87,10 @@ class UserRoleAssignmentTest extends TestCase
 
         $this->assertDatabaseHas('users', [
             'email' => 'new-admin@example.com',
+            'first_name' => 'New',
+            'middle_name' => 'Portal',
+            'last_name' => 'Admin',
+            'suffix' => 'Jr.',
             'role_id' => $adminRole->id,
             'branch_id' => $this->defaultBranch()->id,
         ]);
@@ -99,7 +110,8 @@ class UserRoleAssignmentTest extends TestCase
         $superAdmin = User::create(['name' => 'Super', 'email' => 'super-branch@example.com', 'password' => 'password123', 'role_id' => $superRole->id, 'is_active' => true]);
 
         $this->actingAs($superAdmin)->post('/admin/users', [
-            'name' => 'Unassigned Monitor',
+            'first_name' => 'Unassigned',
+            'last_name' => 'Monitor',
             'email' => 'unassigned@example.com',
             'role_id' => $monitorRole->id,
             'is_active' => true,
@@ -117,6 +129,10 @@ class UserRoleAssignmentTest extends TestCase
 
         $this->actingAs($superAdmin)->get(route('admin.users.index'))
             ->assertOk()
+            ->assertSee('First Name')
+            ->assertSee('Middle Name')
+            ->assertSee('Last Name')
+            ->assertSee('Suffix')
             ->assertSee('Assigned Branch')
             ->assertSee($this->defaultBranch()->name);
     }

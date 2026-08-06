@@ -130,8 +130,8 @@ class DashboardController extends Controller
             ];
         });
 
-        $recent = (clone $transactions)->with('branch')->latest('scanned_at')->limit(8)->get();
+        $recent = (clone $transactions)->with('branch')->latest('scanned_at')->limit(5)->get();
 
-        return compact('metrics', 'chart', 'chartInsights', 'currentMonth', 'studentCharts', 'branchChart', 'recent');
+        return compact('metrics', 'chart', 'chartInsights', 'currentMonth', 'validRate', 'studentCharts', 'branchChart', 'recent');
     }
 }

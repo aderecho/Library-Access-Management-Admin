@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\Branch;
 use App\Models\Employee;
 use App\Models\RfidTransaction;
 use App\Models\Role;
 use App\Models\Student;
-use App\Models\Branch;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -58,7 +58,7 @@ class DatabaseSeeder extends Seeder
                     'rfid_code' => $cardholder->rfid_code,
                     'campus_id' => $isEmployeeScan ? $cardholder->employee_number : $cardholder->campus_id,
                     'cardholder_type' => $isEmployeeScan ? 'employee' : 'student',
-                    'cardholder_name' => $cardholder->name,
+                    'cardholder_name' => $cardholder->full_name,
                     'program' => $isEmployeeScan ? $cardholder->position : $cardholder->program,
                     'college_department' => $isEmployeeScan ? $cardholder->office : $cardholder->college,
                     'year_level' => $isEmployeeScan ? null : $cardholder->year_level,
@@ -90,7 +90,7 @@ class DatabaseSeeder extends Seeder
                         'rfid_code' => $employee->rfid_code,
                         'campus_id' => $employee->employee_number,
                         'cardholder_type' => 'employee',
-                        'cardholder_name' => $employee->name,
+                        'cardholder_name' => $employee->full_name,
                         'program' => $employee->position,
                         'college_department' => $employee->office,
                         'transaction_type' => 'time_in',
