@@ -11,9 +11,11 @@ class AmisStudentVerifier
     public function verify(string $campusId): array
     {
         $baseUrl = rtrim((string) config('services.amis.base_url'), '/');
+        $origin = rtrim((string) config('services.amis.origin'), '/');
         $startedAt = microtime(true);
         $logContext = [
             'base_url' => $baseUrl,
+            'origin' => $origin,
             'campus_id' => $this->maskCampusId($campusId),
         ];
 
@@ -21,6 +23,9 @@ class AmisStudentVerifier
 
         try {
             $response = Http::acceptJson()
+                ->withHeaders([
+                    'Origin' => $origin,
+                ])
                 ->connectTimeout((int) config('services.amis.connect_timeout_seconds', 2))
                 ->timeout((int) config('services.amis.timeout_seconds', 4))
                 ->get($baseUrl.'/api/student-info/'.rawurlencode($campusId));

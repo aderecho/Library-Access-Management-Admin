@@ -21,6 +21,7 @@ class RfidScanTest extends TestCase
 
         Http::preventStrayRequests();
         config()->set('services.amis.base_url', 'http://localhost:8001');
+        config()->set('services.amis.origin', 'https://rfid-test.example');
 
         $this->scannerToken = 'upcebu_scanner_test_token';
 
@@ -144,7 +145,8 @@ class RfidScanTest extends TestCase
                 'valid' => true,
             ]);
 
-        Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8001/api/student-info/'.$student->campus_id);
+        Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8001/api/student-info/'.$student->campus_id
+            && $request->hasHeader('Origin', 'https://rfid-test.example'));
 
         $this->assertDatabaseHas('rfid_transactions', [
             'student_id' => $student->id,
