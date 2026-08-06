@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\ScannerToken;
 use App\Models\Student;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class RfidScanTest extends TestCase
@@ -17,6 +18,9 @@ class RfidScanTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Http::preventStrayRequests();
+        config()->set('services.amis.base_url', 'http://localhost:8001');
 
         $this->scannerToken = 'upcebu_scanner_test_token';
 
@@ -112,6 +116,21 @@ class RfidScanTest extends TestCase
             'is_active' => true,
         ]);
 
+        Http::fake([
+            'http://localhost:8001/api/student-info/'.$student->campus_id => Http::response([
+                'student' => [[
+                    'campus_id' => $student->campus_id,
+                    'first_name' => 'Campus',
+                    'middle_name' => 'ID',
+                    'last_name' => 'Student',
+                    'academic_program_id' => 'BSCS',
+                    'title' => 'BS Computer Science',
+                    'classification' => '4th Year',
+                    'status' => 'Active Student',
+                ]],
+            ]),
+        ]);
+
         $this->withHeader('X-Scanner-Token', $this->scannerToken)
             ->postJson('/api/rfid/scan', ['identifier' => $student->campus_id])
             ->assertOk()
@@ -120,8 +139,12 @@ class RfidScanTest extends TestCase
                 'campusId' => $student->campus_id,
                 'rfidCode' => $student->rfid_code,
                 'yearLevel' => $student->year_level,
+                'verificationSource' => 'amis',
+                'verificationStatus' => 'verified',
                 'valid' => true,
             ]);
+
+        Http::assertSent(fn ($request) => $request->url() === 'http://localhost:8001/api/student-info/'.$student->campus_id);
 
         $this->assertDatabaseHas('rfid_transactions', [
             'student_id' => $student->id,
@@ -129,6 +152,118 @@ class RfidScanTest extends TestCase
             'campus_id' => $student->campus_id,
             'year_level' => $student->year_level,
         ]);
+    }
+
+    public function test_amis_student_without_a_local_record_is_accepted(): void
+    {
+        Http::fake([
+            'http://localhost:8001/api/student-info/200500001' => Http::response([
+                'student' => [[
+                    'user_id' => 25,
+                    'campus_id' => '200500001',
+                    'first_name' => 'Maria',
+                    'middle_name' => 'Santos',
+                    'last_name' => 'Reyes',
+                    'academic_program_id' => 'BSCS',
+                    'title' => 'BS Computer Science',
+                    'classification' => 'Senior',
+                    'status' => 'Active',
+                ]],
+            ]),
+        ]);
+
+        $this->withHeader('X-Scanner-Token', $this->scannerToken)
+            ->postJson('/api/rfid/scan', ['identifier' => '200500001'])
+            ->assertOk()
+            ->assertJson([
+                'cardholderType' => 'student',
+                'campusId' => '200500001',
+                'rfidCode' => '—',
+                'name' => 'Maria Santos Reyes',
+                'firstName' => 'Maria',
+                'middleName' => 'Santos',
+                'lastName' => 'Reyes',
+                'program' => 'BS Computer Science',
+                'yearLevel' => 'Senior',
+                'status' => 'Active',
+                'valid' => true,
+                'verificationSource' => 'amis',
+                'verificationStatus' => 'verified',
+            ]);
+
+        $this->assertDatabaseHas('rfid_transactions', [
+            'branch_id' => $this->defaultBranch()->id,
+            'student_id' => null,
+            'cardholder_type' => 'student',
+            'rfid_code' => '200500001',
+            'campus_id' => '200500001',
+            'cardholder_name' => 'Maria Santos Reyes',
+            'program' => 'BS Computer Science',
+            'year_level' => 'Senior',
+            'status' => 'valid',
+        ]);
+    }
+
+    public function test_student_missing_from_amis_is_denied_with_our_itc_guidance(): void
+    {
+        Http::fake([
+            'http://localhost:8001/api/student-info/209999999' => Http::response([
+                'message' => 'Student not found',
+            ], 404),
+        ]);
+
+        $this->withHeader('X-Scanner-Token', $this->scannerToken)
+            ->postJson('/api/rfid/scan', ['identifier' => '209999999'])
+            ->assertOk()
+            ->assertJson([
+                'cardholderType' => 'student',
+                'campusId' => '209999999',
+                'status' => 'Student record not found',
+                'valid' => false,
+                'message' => 'Student record not found in AMIS. Please contact OUR/ITC to validate the student record.',
+                'verificationSource' => 'amis',
+                'verificationStatus' => 'not_found',
+            ]);
+
+        $this->assertDatabaseHas('rfid_transactions', [
+            'branch_id' => $this->defaultBranch()->id,
+            'student_id' => null,
+            'cardholder_type' => 'student',
+            'campus_id' => '209999999',
+            'status' => 'invalid',
+        ]);
+    }
+
+    public function test_student_is_denied_safely_when_amis_is_unavailable(): void
+    {
+        Http::fake([
+            'http://localhost:8001/api/student-info/208888888' => Http::response(null, 503),
+        ]);
+
+        $this->withHeader('X-Scanner-Token', $this->scannerToken)
+            ->postJson('/api/rfid/scan', ['identifier' => '208888888'])
+            ->assertOk()
+            ->assertJson([
+                'cardholderType' => 'student',
+                'valid' => false,
+                'message' => 'AMIS verification is temporarily unavailable. Please contact OUR/ITC to validate the student record.',
+                'verificationSource' => 'amis',
+                'verificationStatus' => 'unavailable',
+            ]);
+    }
+
+    public function test_non_student_identifiers_do_not_call_amis(): void
+    {
+        $this->withHeader('X-Scanner-Token', $this->scannerToken)
+            ->postJson('/api/rfid/scan', ['identifier' => 'ordinary-rfid-card'])
+            ->assertOk()
+            ->assertJson([
+                'cardholderType' => 'unknown',
+                'verificationSource' => 'local',
+                'verificationStatus' => 'not_found',
+            ]);
+
+        Http::assertNothingSent();
     }
 
     public function test_employee_number_is_accepted_as_legacy_rfid_code_field(): void
