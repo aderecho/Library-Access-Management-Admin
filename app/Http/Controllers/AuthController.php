@@ -102,7 +102,8 @@ class AuthController extends Controller
     {
         $destinations = [
             'dashboard.view' => route('admin.dashboard'),
-            'transactions.view' => route('admin.entry-monitor'),
+            'entry-monitor.view' => route('admin.entry-monitor'),
+            'transactions.view' => route('admin.transactions.index'),
             'reports.view' => route('admin.reports.index'),
             'advertisements.view' => route('admin.advertisements.index'),
             'users.view' => route('admin.users.index'),

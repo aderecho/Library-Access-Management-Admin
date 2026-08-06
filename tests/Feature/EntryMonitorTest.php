@@ -45,7 +45,7 @@ class EntryMonitorTest extends TestCase
         $role = Role::create([
             'name' => 'Security Guard',
             'slug' => 'security-guard',
-            'permissions' => ['transactions.view'],
+            'permissions' => ['entry-monitor.view'],
         ]);
 
         $user = User::factory()->create([

@@ -75,7 +75,8 @@ class MultiBranchIsolationTest extends TestCase
 
     private function monitor(Branch $branch): User
     {
-        $role = Role::create(['name' => 'Branch Monitor', 'slug' => 'branch-monitor-'.fake()->unique()->numberBetween(1, 9999), 'permissions' => ['transactions.view']]);
+        $role = Role::create(['name' => 'Branch Monitor', 'slug' => 'branch-monitor-'.fake()->unique()->numberBetween(1, 9999), 'permissions' => ['entry-monitor.view', 'transactions.view']]);
+
         return User::factory()->create(['branch_id' => $branch->id, 'role_id' => $role->id, 'is_active' => true]);
     }
 

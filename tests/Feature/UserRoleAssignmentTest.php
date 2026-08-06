@@ -11,6 +11,30 @@ class UserRoleAssignmentTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_entry_monitor_role_only_accesses_its_branch_monitor(): void
+    {
+        $role = Role::where('slug', 'entry-monitor')->firstOrFail();
+
+        $this->assertEqualsCanonicalizing(['entry-monitor.view'], $role->permissions);
+
+        $user = User::factory()->create([
+            'branch_id' => $this->defaultBranch()->id,
+            'role_id' => $role->id,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('admin.entry-monitor'))
+            ->assertOk()
+            ->assertSee('Entry Monitor')
+            ->assertSee($this->defaultBranch()->name)
+            ->assertDontSee(route('admin.transactions.index'), false);
+
+        $this->actingAs($user)
+            ->get(route('admin.transactions.index'))
+            ->assertForbidden();
+    }
+
     public function test_itc_tech_role_has_branch_configuration_permissions(): void
     {
         $this->assertDatabaseHas('roles', [

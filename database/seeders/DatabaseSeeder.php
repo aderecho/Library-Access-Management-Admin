@@ -30,6 +30,11 @@ class DatabaseSeeder extends Seeder
         );
 
         Role::firstOrCreate(
+            ['slug' => 'entry-monitor'],
+            ['name' => 'Entry Monitor', 'description' => 'Branch-assigned staff who monitor live library entries.']
+        );
+
+        Role::firstOrCreate(
             ['slug' => 'report-viewer'],
             ['name' => 'Report Viewer', 'description' => 'Reserved for read-only report access.']
         );

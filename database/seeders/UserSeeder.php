@@ -25,11 +25,20 @@ class UserSeeder extends Seeder
                 'description' => 'Access to dashboard, transactions, and reports.',
                 'permissions' => [
                     'dashboard.view',
+                    'entry-monitor.view',
                     'transactions.view',
                     'reports.view',
                     'reports.export',
                     'advertisements.view',
                     'advertisements.create',
+                ],
+            ],
+            [
+                'name' => 'Entry Monitor',
+                'slug' => 'entry-monitor',
+                'description' => 'Branch-assigned staff who monitor live library entries.',
+                'permissions' => [
+                    'entry-monitor.view',
                 ],
             ],
             [

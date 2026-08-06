@@ -7,5 +7,5 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 });
 
 Broadcast::channel('branches.{branchId}.rfid-scans', function ($user, int $branchId) {
-    return $user->hasPermission('transactions.view') && $user->canAccessBranch($branchId);
+    return $user->hasPermission('entry-monitor.view') && $user->canAccessBranch($branchId);
 });
