@@ -33,4 +33,10 @@ return [
         'callback_path' => $googleCallbackPath,
         'redirect' => $googleRedirect ?: rtrim(env('APP_URL', 'http://localhost:8000'), '/').$googleCallbackPath,
     ],
+
+    'amis' => [
+        'base_url' => env('AMIS_BASE_URL', 'http://localhost:8001'),
+        'connect_timeout_seconds' => (int) env('AMIS_CONNECT_TIMEOUT_SECONDS', 2),
+        'timeout_seconds' => (int) env('AMIS_TIMEOUT_SECONDS', 4),
+    ],
 ];
