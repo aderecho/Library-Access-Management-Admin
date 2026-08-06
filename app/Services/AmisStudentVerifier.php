@@ -24,7 +24,7 @@ class AmisStudentVerifier
         try {
             $response = Http::acceptJson()
                 ->withHeaders([
-                    'Origin' => $origin,
+                    'Origin' => 'https://las.upcebu.edu.ph',
                 ])
                 ->connectTimeout((int) config('services.amis.connect_timeout_seconds', 2))
                 ->timeout((int) config('services.amis.timeout_seconds', 4))
