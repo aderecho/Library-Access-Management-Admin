@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -24,8 +25,19 @@ class AmisStudentVerifier
         try {
             $response = Http::acceptJson()
                 ->withHeaders([
-                    'Origin' => 'https://las.upcebu.edu.ph',
+                    'Origin' => $origin,
                 ])
+                ->beforeSending(function (Request $request) use ($campusId): void {
+                    Log::info('AMIS HTTP request prepared.', [
+                        'method' => $request->method(),
+                        'url' => str_replace($campusId, $this->maskCampusId($campusId), $request->url()),
+                        'headers' => [
+                            'Accept' => $request->header('Accept'),
+                            'Origin' => $request->header('Origin'),
+                            'User-Agent' => $request->header('User-Agent'),
+                        ],
+                    ]);
+                })
                 ->connectTimeout((int) config('services.amis.connect_timeout_seconds', 2))
                 ->timeout((int) config('services.amis.timeout_seconds', 4))
                 ->get($baseUrl.'/api/student-info/'.rawurlencode($campusId));
