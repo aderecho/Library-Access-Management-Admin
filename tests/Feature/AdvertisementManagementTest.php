@@ -62,6 +62,40 @@ class AdvertisementManagementTest extends TestCase
         Storage::disk('public')->assertExists($advertisement->image_path);
     }
 
+    public function test_advertisement_media_over_fifty_megabytes_is_rejected_with_a_clear_warning(): void
+    {
+        Storage::fake('public');
+        $user = $this->createAdvertisementUser(['advertisements.view', 'advertisements.create']);
+
+        $this->actingAs($user)->post(route('admin.advertisements.store'), [
+            'title' => 'Oversized campus video',
+            'media' => UploadedFile::fake()->create('oversized.mp4', 51201, 'video/mp4'),
+        ])->assertSessionHasErrors([
+            'media' => 'The media must not exceed 50 MB.',
+        ]);
+
+        $this->assertDatabaseCount('advertisements', 0);
+    }
+
+    public function test_advertisement_form_exposes_the_client_side_media_limit_warning(): void
+    {
+        $user = $this->createAdvertisementUser(['advertisements.view', 'advertisements.create']);
+
+        $this->actingAs($user)
+            ->get(route('admin.advertisements.index'))
+            ->assertOk()
+            ->assertSee('data-max-bytes="52428800"', false)
+            ->assertSee('data-ad-media-warning', false)
+            ->assertSee('Maximum 50 MB');
+
+        $script = file_get_contents(resource_path('js/advertisements.js'));
+
+        $this->assertIsString($script);
+        $this->assertStringContainsString('file.size <= maxBytes', $script);
+        $this->assertStringContainsString("new CustomEvent('admin:notify'", $script);
+        $this->assertStringContainsString('The maximum upload size is', $script);
+    }
+
     public function test_authorized_user_can_view_the_advertisement_workspace(): void
     {
         $role = Role::create([

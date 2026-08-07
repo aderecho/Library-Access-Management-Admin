@@ -58,15 +58,14 @@ const notificationDetails = {
 
 const notifications = document.querySelectorAll('[data-notification]');
 
-notifications.forEach((notification) => {
-    const type = notification.dataset.type ?? 'info';
+const showNotification = ({ type = 'info', message, duration = 5000 }) => {
     const details = notificationDetails[type] ?? notificationDetails.info;
     $.notify({
         icon: details.icon,
         title: details.title,
-        message: notification.dataset.message,
+        message,
     }, {
-        autoHideDelay: Number(notification.dataset.duration ?? 5000),
+        autoHideDelay: Number(duration),
         className: type,
         globalPosition: 'top right',
         showAnimation: 'fadeIn',
@@ -75,7 +74,17 @@ notifications.forEach((notification) => {
         hideDuration: 200,
         style: 'up-cebu',
     });
+};
+
+notifications.forEach((notification) => {
+    showNotification({
+        type: notification.dataset.type ?? 'info',
+        message: notification.dataset.message,
+        duration: notification.dataset.duration ?? 5000,
+    });
 });
+
+window.addEventListener('admin:notify', (event) => showNotification(event.detail ?? {}));
 
 $(document).on('click', '.up-toast-close', function () {
     $(this).closest('.notifyjs-wrapper').trigger('notify-hide');

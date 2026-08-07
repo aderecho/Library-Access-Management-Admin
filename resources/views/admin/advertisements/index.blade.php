@@ -26,12 +26,14 @@
                 <label class="advertisement-dropzone" data-ad-dropzone>
                     <input class="sr-only" type="file" name="media"
                            accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+                           data-max-bytes="{{ $maxMediaSizeMb * 1024 * 1024 }}"
                            data-ad-media-input required>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 15v4h14v-4"/></svg>
                     <strong data-ad-file-label>Drop an image or video here, or browse</strong>
-                    <span>JPG, PNG, WebP, MP4 or WebM · Maximum 50 MB</span>
+                    <span>JPG, PNG, WebP, MP4 or WebM · Maximum {{ $maxMediaSizeMb }} MB</span>
                     <span class="advertisement-browse">Browse media</span>
                 </label>
+                <p class="advertisement-media-warning" data-ad-media-warning role="alert" hidden></p>
 
                 <div class="advertisement-preview" data-ad-preview-wrap hidden>
                     <span>Media preview</span>
@@ -149,8 +151,10 @@
                     <label>Display until<input type="datetime-local" name="ends_at" data-ad-edit-ends-at></label>
                 </div>
                 <label>Replace media <small>Optional · leave empty to keep the current image or video</small>
-                    <input type="file" name="media" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" data-ad-edit-media>
+                    <input type="file" name="media" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+                           data-max-bytes="{{ $maxMediaSizeMb * 1024 * 1024 }}" data-ad-edit-media>
                 </label>
+                <p class="advertisement-media-warning" data-ad-edit-media-warning role="alert" hidden></p>
                 <div class="advertisement-edit-preview">
                     <span>Current media</span>
                     <img data-ad-edit-image-preview alt="Advertisement media preview" hidden>

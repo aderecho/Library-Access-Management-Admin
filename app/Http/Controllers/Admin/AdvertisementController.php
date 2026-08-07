@@ -11,6 +11,7 @@ class AdvertisementController extends Controller
 {
     public function index(Request $request)
     {
+        $maxMediaSizeMb = (int) config('advertisements.max_media_size_mb', 50);
         $status = $request->string('status', 'published')->lower()->toString();
         $status = in_array($status, ['published', 'scheduled', 'expired'], true)
             ? $status
@@ -33,12 +34,15 @@ class AdvertisementController extends Controller
             ->paginate(6)
             ->withQueryString();
 
-        return view('admin.advertisements.index', compact('advertisements', 'status', 'statusCounts'));
+        return view('admin.advertisements.index', compact('advertisements', 'status', 'statusCounts', 'maxMediaSizeMb'));
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate($this->advertisementRules(mediaRequired: true));
+        $validated = $request->validate(
+            $this->advertisementRules(mediaRequired: true),
+            $this->advertisementMessages(),
+        );
 
         $validated['created_by'] = $request->user()->id;
         $validated['media_type'] = str_starts_with($request->file('media')->getMimeType(), 'video/')
@@ -55,7 +59,10 @@ class AdvertisementController extends Controller
 
     public function update(Request $request, Advertisement $advertisement)
     {
-        $validated = $request->validate($this->advertisementRules(mediaRequired: false));
+        $validated = $request->validate(
+            $this->advertisementRules(mediaRequired: false),
+            $this->advertisementMessages(),
+        );
         $oldMediaPath = null;
 
         if ($request->hasFile('media')) {
@@ -92,8 +99,18 @@ class AdvertisementController extends Controller
                 $mediaRequired ? 'required' : 'nullable',
                 'file',
                 'mimetypes:image/jpeg,image/png,image/webp,video/mp4,video/webm',
-                'max:51200',
+                'max:'.((int) config('advertisements.max_media_size_mb', 50) * 1024),
             ],
+        ];
+    }
+
+    private function advertisementMessages(): array
+    {
+        $maxMediaSizeMb = (int) config('advertisements.max_media_size_mb', 50);
+
+        return [
+            'media.max' => "The media must not exceed {$maxMediaSizeMb} MB.",
+            'media.uploaded' => "The media could not be uploaded. Confirm that PHP and Nginx allow uploads up to {$maxMediaSizeMb} MB.",
         ];
     }
 }
