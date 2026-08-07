@@ -4,6 +4,7 @@ return [
     'groups' => [
         'Access monitoring' => [
             'dashboard.view' => 'View dashboard and analytics',
+            'entry-monitor.view' => 'View the live entry monitor',
             'transactions.view' => 'View and search RFID transactions',
             'reports.view' => 'View usage reports',
             'reports.export' => 'Export reports as CSV',

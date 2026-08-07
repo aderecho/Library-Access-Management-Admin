@@ -286,7 +286,7 @@ add_code(doc,
     "        proxy_pass http://127.0.0.1:8080;\n"
     "    }\n\n"
     "    location ~ /\\. { deny all; }\n"
-    "    client_max_body_size 20M;\n"
+    "    client_max_body_size 55M;\n"
     "}"
 )
 start_step_sequence(doc)

@@ -32,11 +32,13 @@
                     <span>Dashboard</span>
                 </a>
             @endif
-            @if(auth()->user()->hasPermission('transactions.view'))
+            @if(auth()->user()->hasPermission('entry-monitor.view'))
                 <a class="nav-link {{ request()->routeIs('admin.entry-monitor') ? 'active' : '' }}" href="{{ route('admin.entry-monitor') }}">
                     <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 13h3l2-6 4 10 2-4h5"/><path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/></svg></span>
                     <span>Entry Monitor</span>
                 </a>
+            @endif
+            @if(auth()->user()->hasPermission('transactions.view'))
                 <a class="nav-link {{ request()->routeIs('admin.transactions.*') ? 'active' : '' }}" href="{{ route('admin.transactions.index') }}">
                     <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></span>
                     <span>Transactions</span>
@@ -95,21 +97,23 @@
 
     <main class="content">
         <nav class="topbar" aria-label="Admin toolbar">
-            <form class="global-search" method="get" action="{{ route('admin.transactions.index') }}" role="search">
-                <label class="sr-only" for="global-search">Search transactions</label>
-                <input
-                    id="global-search"
-                    type="search"
-                    name="search"
-                    value="{{ request()->routeIs('admin.transactions.*') ? request('search') : '' }}"
-                    placeholder="Search"
-                >
-                <button type="submit" aria-label="Search">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/>
-                    </svg>
-                </button>
-            </form>
+            @if(auth()->user()->hasPermission('transactions.view'))
+                <form class="global-search" method="get" action="{{ route('admin.transactions.index') }}" role="search">
+                    <label class="sr-only" for="global-search">Search transactions</label>
+                    <input
+                        id="global-search"
+                        type="search"
+                        name="search"
+                        value="{{ request()->routeIs('admin.transactions.*') ? request('search') : '' }}"
+                        placeholder="Search"
+                    >
+                    <button type="submit" aria-label="Search">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/>
+                        </svg>
+                    </button>
+                </form>
+            @endif
 
             <div class="topbar-profile">
                 <div class="topbar-profile-copy">

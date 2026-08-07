@@ -48,7 +48,7 @@ class LiveScanUpdateTest extends TestCase
 
     public function test_dashboard_transaction_and_report_pages_enable_websocket_updates(): void
     {
-        $admin = $this->createAdmin(['dashboard.view', 'transactions.view', 'reports.view']);
+        $admin = $this->createAdmin(['dashboard.view', 'entry-monitor.view', 'transactions.view', 'reports.view']);
 
         $this->actingAs($admin)
             ->get(route('admin.dashboard'))
@@ -69,7 +69,7 @@ class LiveScanUpdateTest extends TestCase
     public function test_authorized_admin_can_join_the_live_scan_channel(): void
     {
         $this->useReverbBroadcaster();
-        $authorizedAdmin = $this->createAdmin(['transactions.view']);
+        $authorizedAdmin = $this->createAdmin(['entry-monitor.view']);
 
         $this->actingAs($authorizedAdmin)
             ->postJson('/broadcasting/auth', [
@@ -79,7 +79,7 @@ class LiveScanUpdateTest extends TestCase
             ->assertOk();
     }
 
-    public function test_report_viewer_cannot_join_the_live_scan_channel_without_transaction_permission(): void
+    public function test_report_viewer_cannot_join_the_live_scan_channel_without_entry_monitor_permission(): void
     {
         $this->useReverbBroadcaster();
         $reportViewer = $this->createAdmin(['reports.view']);

@@ -1,3 +1,35 @@
+const formatMegabytes = (bytes) => `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+
+const notifyMediaLimit = (message) => {
+    window.dispatchEvent(new CustomEvent('admin:notify', {
+        detail: { type: 'warn', message, duration: 7000 },
+    }));
+};
+
+const validateMediaSize = (input, warning) => {
+    const file = input.files?.[0];
+
+    if (!file) return true;
+
+    input.setCustomValidity('');
+    warning.hidden = true;
+    warning.textContent = '';
+
+    const maxBytes = Number(input.dataset.maxBytes || 50 * 1024 * 1024);
+    if (file.size <= maxBytes) return true;
+
+    const maxMegabytes = Math.round(maxBytes / (1024 * 1024));
+    const message = `${file.name} is ${formatMegabytes(file.size)}. The maximum upload size is ${maxMegabytes} MB. Choose a smaller file.`;
+
+    input.value = '';
+    input.setCustomValidity(message);
+    warning.textContent = message;
+    warning.hidden = false;
+    notifyMediaLimit(message);
+
+    return false;
+};
+
 const advertisementInput = document.querySelector('[data-ad-media-input]');
 
 if (advertisementInput) {
@@ -5,11 +37,28 @@ if (advertisementInput) {
     const imagePreview = document.querySelector('[data-ad-image-preview]');
     const videoPreview = document.querySelector('[data-ad-video-preview]');
     const fileLabel = document.querySelector('[data-ad-file-label]');
+    const mediaWarning = document.querySelector('[data-ad-media-warning]');
+    const defaultFileLabel = fileLabel.textContent;
     let previewUrl = null;
+
+    const resetPreview = () => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        previewUrl = null;
+        imagePreview.removeAttribute('src');
+        videoPreview.pause();
+        videoPreview.removeAttribute('src');
+        previewWrap.hidden = true;
+        fileLabel.textContent = defaultFileLabel;
+    };
 
     advertisementInput.addEventListener('change', () => {
         const file = advertisementInput.files?.[0];
         if (!file) return;
+
+        if (!validateMediaSize(advertisementInput, mediaWarning)) {
+            resetPreview();
+            return;
+        }
 
         if (previewUrl) URL.revokeObjectURL(previewUrl);
         previewUrl = URL.createObjectURL(file);
@@ -47,6 +96,7 @@ if (advertisementEditDialog) {
     const editMedia = advertisementEditDialog.querySelector('[data-ad-edit-media]');
     const editImagePreview = advertisementEditDialog.querySelector('[data-ad-edit-image-preview]');
     const editVideoPreview = advertisementEditDialog.querySelector('[data-ad-edit-video-preview]');
+    const editMediaWarning = advertisementEditDialog.querySelector('[data-ad-edit-media-warning]');
     let editPreviewUrl = null;
 
     const showEditPreview = (mediaType, mediaUrl) => {
@@ -77,6 +127,9 @@ if (advertisementEditDialog) {
             editStartsAt.value = data.startsAt || '';
             editEndsAt.value = data.endsAt || '';
             editMedia.value = '';
+            editMedia.setCustomValidity('');
+            editMediaWarning.hidden = true;
+            editMediaWarning.textContent = '';
             showEditPreview(data.mediaType, data.mediaUrl);
             advertisementEditDialog.showModal();
             editTitle.focus();
@@ -86,6 +139,8 @@ if (advertisementEditDialog) {
     editMedia.addEventListener('change', () => {
         const file = editMedia.files?.[0];
         if (!file) return;
+
+        if (!validateMediaSize(editMedia, editMediaWarning)) return;
 
         if (editPreviewUrl) URL.revokeObjectURL(editPreviewUrl);
         editPreviewUrl = URL.createObjectURL(file);

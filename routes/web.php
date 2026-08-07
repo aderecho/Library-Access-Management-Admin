@@ -1,15 +1,15 @@
 <?php
 
-use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\AdvertisementController;
+use App\Http\Controllers\Admin\BranchController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\ScannerTokenController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\BranchController;
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Api\ScannerSettingsSsoController;
+use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/admin');
@@ -33,7 +33,7 @@ Route::prefix('admin')
     ->middleware('auth')
     ->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->middleware('permission:dashboard.view')->name('dashboard');
-        Route::get('/entry-monitor', [TransactionController::class, 'monitor'])->middleware('permission:transactions.view')->name('entry-monitor');
+        Route::get('/entry-monitor', [TransactionController::class, 'monitor'])->middleware('permission:entry-monitor.view')->name('entry-monitor');
         Route::get('/advertisements', [AdvertisementController::class, 'index'])->middleware('permission:advertisements.view')->name('advertisements.index');
         Route::post('/advertisements', [AdvertisementController::class, 'store'])->middleware('permission:advertisements.create')->name('advertisements.store');
         Route::put('/advertisements/{advertisement}', [AdvertisementController::class, 'update'])->middleware('permission:advertisements.create')->name('advertisements.update');
