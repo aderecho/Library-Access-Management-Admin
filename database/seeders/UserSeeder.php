@@ -114,7 +114,7 @@ class UserSeeder extends Seeder
         ];
 
         foreach ($users as $user) {
-            User::updateOrCreate(
+            $model = User::updateOrCreate(
                 ['email' => $user['email']],
                 [
                     'first_name' => $user['first_name'],
@@ -127,6 +127,8 @@ class UserSeeder extends Seeder
                     'is_active' => $user['is_active'],
                 ]
             );
+
+            $model->roles()->sync([$roles[$user['role']]->id]);
         }
     }
 }

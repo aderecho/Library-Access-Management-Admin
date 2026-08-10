@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\RfidTransaction;
 use App\Models\Branch;
+use App\Models\RfidTransaction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -314,7 +314,7 @@ class ReportController extends Controller
     {
         $user = $request->user();
 
-        if ($user->role?->slug !== 'super-admin') {
+        if (! $user->isSuperAdmin()) {
             abort_unless($user->branch_id && $user->branch?->is_active, 403, 'An active branch assignment is required.');
 
             return [collect([$user->branch]), (int) $user->branch_id];

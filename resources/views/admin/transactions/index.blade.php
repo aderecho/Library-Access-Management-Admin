@@ -2,17 +2,17 @@
 
 @section('content')
 <div data-live-scan-page>
-<section class="panel">
+<section class="panel transaction-log-panel">
     <div class="panel-heading">
         <div><span class="eyebrow">Audit trail</span><h2>RFID Scan Transactions</h2></div>
     </div>
 
     <form class="filters" method="get">
-        <select name="branch_id" @disabled(auth()->user()->role?->slug !== 'super-admin')>
-            @if(auth()->user()->role?->slug === 'super-admin')<option value="">All branches</option>@endif
+        <select name="branch_id" @disabled(! auth()->user()->isSuperAdmin())>
+            @if(auth()->user()->isSuperAdmin())<option value="">All branches</option>@endif
             @foreach($branches as $branch)<option value="{{ $branch->id }}" @selected((int) $branchId === $branch->id)>{{ $branch->name }}</option>@endforeach
         </select>
-        @if(auth()->user()->role?->slug !== 'super-admin')<input type="hidden" name="branch_id" value="{{ $branchId }}">@endif
+        @if(! auth()->user()->isSuperAdmin())<input type="hidden" name="branch_id" value="{{ $branchId }}">@endif
         <input name="search" value="{{ request('search') }}" placeholder="Campus ID, employee number, name, or RFID">
         <select name="status">
             <option value="">All statuses</option>
@@ -25,8 +25,8 @@
         <a class="button secondary" href="{{ route('admin.transactions.index') }}">Reset</a>
     </form>
 
-    <div class="table-wrap">
-        <table>
+    <div class="table-wrap transaction-table-wrap" tabindex="0" aria-label="RFID transaction records">
+        <table class="transaction-table">
             <thead><tr><th>Scan Time</th><th>Branch Entered</th><th>Campus ID / Employee No.</th><th>Cardholder</th><th>Category</th><th>RFID</th><th>Type</th><th>Status</th><th>Message</th></tr></thead>
             <tbody>
             @forelse($transactions as $transaction)
@@ -48,7 +48,7 @@
         </table>
     </div>
 
-    {{ $transactions->links() }}
+    {{ $transactions->onEachSide(1)->links('vendor.pagination.admin') }}
 </section>
 </div>
 @endsection

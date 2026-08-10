@@ -6,7 +6,7 @@
         <div>
             <span class="eyebrow">Administration</span>
             <h2>User Role Manager</h2>
-            <p class="muted">Assign granular access permissions to each user role.</p>
+            <p class="muted">Create roles with any combination of page and action permissions, then assign each user the role they need.</p>
         </div>
         @if(auth()->user()->hasPermission('roles.create'))
             <a class="button primary" href="{{ route('admin.roles.create') }}">Add new role</a>
@@ -21,7 +21,7 @@
             <table class="permission-matrix">
                 <thead>
                     <tr>
-                        <th>Actions</th>
+                        <th>Page / action access</th>
                         @foreach($roles as $role)
                             <th>
                                 <strong>{{ $role->name }}</strong>

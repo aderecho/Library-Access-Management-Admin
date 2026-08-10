@@ -62,16 +62,46 @@ class AdvertisementManagementTest extends TestCase
         Storage::disk('public')->assertExists($advertisement->image_path);
     }
 
-    public function test_advertisement_media_over_fifty_megabytes_is_rejected_with_a_clear_warning(): void
+    public function test_advertisement_video_at_five_hundred_megabytes_is_accepted(): void
+    {
+        Storage::fake('public');
+        $user = $this->createAdvertisementUser(['advertisements.create']);
+
+        $this->actingAs($user)->post(route('admin.advertisements.store'), [
+            'title' => 'Maximum size campus video',
+            'media' => UploadedFile::fake()->create('maximum.mp4', 512000, 'video/mp4'),
+        ])->assertRedirect(route('admin.advertisements.index'));
+
+        $advertisement = Advertisement::firstOrFail();
+        $this->assertSame('video', $advertisement->media_type);
+        Storage::disk('public')->assertExists($advertisement->image_path);
+    }
+
+    public function test_advertisement_video_over_five_hundred_megabytes_is_rejected_with_a_clear_warning(): void
     {
         Storage::fake('public');
         $user = $this->createAdvertisementUser(['advertisements.view', 'advertisements.create']);
 
         $this->actingAs($user)->post(route('admin.advertisements.store'), [
             'title' => 'Oversized campus video',
-            'media' => UploadedFile::fake()->create('oversized.mp4', 51201, 'video/mp4'),
+            'media' => UploadedFile::fake()->create('oversized.mp4', 512001, 'video/mp4'),
         ])->assertSessionHasErrors([
-            'media' => 'The media must not exceed 50 MB.',
+            'media' => 'The video must not exceed 500 MB.',
+        ]);
+
+        $this->assertDatabaseCount('advertisements', 0);
+    }
+
+    public function test_advertisement_image_limit_remains_fifty_megabytes(): void
+    {
+        Storage::fake('public');
+        $user = $this->createAdvertisementUser(['advertisements.create']);
+
+        $this->actingAs($user)->post(route('admin.advertisements.store'), [
+            'title' => 'Oversized campus image',
+            'media' => UploadedFile::fake()->create('oversized.jpg', 51201, 'image/jpeg'),
+        ])->assertSessionHasErrors([
+            'media' => 'The image must not exceed 50 MB.',
         ]);
 
         $this->assertDatabaseCount('advertisements', 0);
@@ -84,14 +114,18 @@ class AdvertisementManagementTest extends TestCase
         $this->actingAs($user)
             ->get(route('admin.advertisements.index'))
             ->assertOk()
-            ->assertSee('data-max-bytes="52428800"', false)
+            ->assertSee('data-max-image-bytes="52428800"', false)
+            ->assertSee('data-max-video-bytes="524288000"', false)
             ->assertSee('data-ad-media-warning', false)
-            ->assertSee('Maximum 50 MB');
+            ->assertSee('JPG, PNG or WebP up to 50 MB')
+            ->assertSee('MP4 or WebM up to 500 MB');
 
         $script = file_get_contents(resource_path('js/advertisements.js'));
 
         $this->assertIsString($script);
         $this->assertStringContainsString('file.size <= maxBytes', $script);
+        $this->assertStringContainsString('input.dataset.maxVideoBytes', $script);
+        $this->assertStringContainsString('input.dataset.maxImageBytes', $script);
         $this->assertStringContainsString("new CustomEvent('admin:notify'", $script);
         $this->assertStringContainsString('The maximum upload size is', $script);
     }
@@ -214,6 +248,51 @@ class AdvertisementManagementTest extends TestCase
         Storage::disk('public')->assertExists($advertisement->image_path);
     }
 
+    public function test_advertisement_manager_can_delete_an_advertisement_and_its_media(): void
+    {
+        Storage::fake('public');
+        $user = $this->createAdvertisementUser(['advertisements.view', 'advertisements.create']);
+        $advertisement = Advertisement::create([
+            'title' => 'Advertisement to delete',
+            'image_path' => 'advertisements/delete-me.mp4',
+            'media_type' => 'video',
+        ]);
+        Storage::disk('public')->put($advertisement->image_path, 'video content');
+
+        $this->actingAs($user)
+            ->delete(route('admin.advertisements.destroy', $advertisement), ['return_status' => 'published'])
+            ->assertRedirect(route('admin.advertisements.index', ['status' => 'published']))
+            ->assertSessionHas('success', 'Advertisement deleted successfully.');
+
+        $this->assertDatabaseMissing('advertisements', ['id' => $advertisement->id]);
+        Storage::disk('public')->assertMissing('advertisements/delete-me.mp4');
+    }
+
+    public function test_edit_modal_exposes_the_delete_action_and_confirmation(): void
+    {
+        $user = $this->createAdvertisementUser(['advertisements.view', 'advertisements.create']);
+        $advertisement = Advertisement::create([
+            'title' => 'Deletable advertisement',
+            'image_path' => 'advertisements/deletable.jpg',
+            'media_type' => 'image',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('admin.advertisements.index'))
+            ->assertOk()
+            ->assertSee('data-delete-url="'.route('admin.advertisements.destroy', $advertisement).'"', false)
+            ->assertSee('data-ad-edit-delete', false)
+            ->assertSee('data-ad-delete-dialog', false)
+            ->assertSee('Keep advertisement')
+            ->assertSee('Yes, delete');
+
+        $script = file_get_contents(resource_path('js/advertisements.js'));
+
+        $this->assertIsString($script);
+        $this->assertStringNotContainsString('window.confirm', $script);
+        $this->assertStringContainsString('deleteDialog.showModal()', $script);
+    }
+
     public function test_read_only_advertisement_viewer_cannot_edit(): void
     {
         $user = $this->createAdvertisementUser(['advertisements.view']);
@@ -231,6 +310,10 @@ class AdvertisementManagementTest extends TestCase
         $this->actingAs($user)->put(route('admin.advertisements.update', $advertisement), [
             'title' => 'Unauthorized edit',
         ])->assertForbidden();
+
+        $this->actingAs($user)
+            ->delete(route('admin.advertisements.destroy', $advertisement))
+            ->assertForbidden();
 
         $this->assertSame('Protected advertisement', $advertisement->fresh()->title);
     }

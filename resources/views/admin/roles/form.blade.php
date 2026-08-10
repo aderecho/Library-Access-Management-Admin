@@ -16,8 +16,8 @@
         </label>
 
         <fieldset class="role-permissions">
-            <legend>Permissions</legend>
-            <p class="muted">Choose the actions users with this role can perform.</p>
+            <legend>Page and action access</legend>
+            <p class="muted">Select any combination of permissions for this role. For example, you can allow both Entry Monitor and Reports without granting Dashboard or Transactions access.</p>
 
             @foreach($permissionGroups as $group => $permissions)
                 <div class="role-permission-group">

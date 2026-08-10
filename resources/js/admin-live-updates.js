@@ -9,6 +9,7 @@ if (monitorClock) {
         monitorClock.textContent = new Intl.DateTimeFormat('en-PH', {
             dateStyle: 'medium',
             timeStyle: 'medium',
+            timeZone: 'Asia/Manila',
         }).format(new Date());
     };
 

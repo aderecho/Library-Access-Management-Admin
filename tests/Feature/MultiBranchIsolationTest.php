@@ -10,6 +10,7 @@ use App\Models\ScannerToken;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
@@ -66,6 +67,38 @@ class MultiBranchIsolationTest extends TestCase
             ->assertSee($branchOne->name)
             ->assertSee('Visible Audit Student')
             ->assertDontSee('Hidden Audit Student');
+    }
+
+    public function test_transaction_log_uses_sized_admin_pagination_without_tailwind_svg_arrows(): void
+    {
+        [$branchOne] = $this->branches();
+        $monitor = $this->monitor($branchOne);
+
+        foreach (range(1, 21) as $index) {
+            $this->transaction($branchOne, 'Pagination Student '.$index);
+        }
+
+        $this->actingAs($monitor)->get(route('admin.transactions.index'))
+            ->assertOk()
+            ->assertSee('transaction-table-wrap', false)
+            ->assertSee('admin-pagination', false)
+            ->assertSee('Showing')
+            ->assertSee('20')
+            ->assertSee('21')
+            ->assertDontSee('w-5 h-5', false);
+    }
+
+    public function test_admin_pagination_is_the_application_default(): void
+    {
+        $paginator = new LengthAwarePaginator(range(1, 20), 21, 20, 1, [
+            'path' => '/admin/example',
+        ]);
+
+        $html = $paginator->links()->toHtml();
+
+        $this->assertStringContainsString('admin-pagination', $html);
+        $this->assertStringNotContainsString('w-5 h-5', $html);
+        $this->assertStringNotContainsString('<svg', $html);
     }
 
     private function branches(): array

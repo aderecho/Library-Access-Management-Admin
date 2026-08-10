@@ -35,7 +35,7 @@ class RoleController extends Controller
             'permissions.*' => ['string', Rule::in($this->availablePermissions())],
         ]);
 
-        $validated['slug'] = Str::slug($validated['slug'] ?: $validated['name']);
+        $validated['slug'] = Str::slug($validated['slug'] ?? $validated['name']);
         $validated['permissions'] = array_values($validated['permissions'] ?? []);
 
         Role::create($validated);
