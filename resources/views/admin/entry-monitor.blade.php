@@ -10,7 +10,7 @@
 <section class="monitor-control-bar" aria-label="Entry monitor controls">
     <div class="monitor-branch-control">
         <span class="monitor-control-label">Monitoring branch</span>
-        @if(auth()->user()->role?->slug === 'super-admin' && $branches->count() > 1)
+        @if(auth()->user()->isSuperAdmin() && $branches->count() > 1)
             <form method="get" action="{{ route('admin.entry-monitor') }}" class="monitor-branch-form">
                 <label class="sr-only" for="monitor-branch-select">Monitoring branch</label>
                 <select id="monitor-branch-select" name="branch_id" onchange="this.form.submit()">

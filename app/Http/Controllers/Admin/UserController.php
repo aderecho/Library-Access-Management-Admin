@@ -7,6 +7,8 @@ use App\Models\Branch;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -15,7 +17,7 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::with(['role', 'branch'])->latest()->paginate(15);
+        $users = User::with(['roles', 'role', 'branch'])->latest()->paginate(15);
 
         return view('admin.users.index', compact('users'));
     }
@@ -37,16 +39,24 @@ class UserController extends Controller
             'last_name' => ['required', 'string', 'max:80'],
             'suffix' => ['nullable', 'string', 'max:30'],
             'email' => ['required', 'email', 'max:150', 'unique:users,email'],
-            'role_id' => ['required', 'exists:roles,id'],
+            'role_ids' => ['required', 'array', 'min:1'],
+            'role_ids.*' => ['integer', 'distinct', 'exists:roles,id'],
             'branch_id' => ['nullable', Rule::exists('branches', 'id')->where('is_active', true)],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        $validated = $this->enforceBranchAssignment($validated);
+        $roles = Role::whereKey($validated['role_ids'])->get();
+        $roleIds = $roles->pluck('id')->all();
+        unset($validated['role_ids']);
+        $validated = $this->enforceBranchAssignment($validated, $roles);
+        $validated['role_id'] = $this->primaryRole($roles)->id;
         $validated['password'] = Str::random(64);
         $validated['is_active'] = $request->boolean('is_active');
 
-        User::create($validated);
+        DB::transaction(function () use ($validated, $roleIds): void {
+            $user = User::create($validated);
+            $user->roles()->sync($roleIds);
+        });
 
         return redirect()->route('admin.users.index')->with('success', 'User account created.');
     }
@@ -68,33 +78,44 @@ class UserController extends Controller
             'last_name' => ['required', 'string', 'max:80'],
             'suffix' => ['nullable', 'string', 'max:30'],
             'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($user->id)],
-            'role_id' => ['required', 'exists:roles,id'],
+            'role_ids' => ['required', 'array', 'min:1'],
+            'role_ids.*' => ['integer', 'distinct', 'exists:roles,id'],
             'branch_id' => ['nullable', Rule::exists('branches', 'id')->where('is_active', true)],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
-        $validated = $this->enforceBranchAssignment($validated);
+        $roles = Role::whereKey($validated['role_ids'])->get();
+        $roleIds = $roles->pluck('id')->all();
+        unset($validated['role_ids']);
+        $validated = $this->enforceBranchAssignment($validated, $roles);
+        $validated['role_id'] = $this->primaryRole($roles)->id;
         $validated['is_active'] = $request->boolean('is_active');
 
-        $user->update($validated);
+        DB::transaction(function () use ($user, $validated, $roleIds): void {
+            $user->update($validated);
+            $user->roles()->sync($roleIds);
+        });
 
         return redirect()->route('admin.users.index')->with('success', 'User account updated.');
     }
 
-    private function enforceBranchAssignment(array $validated): array
+    private function enforceBranchAssignment(array $validated, Collection $roles): array
     {
-        $role = Role::findOrFail($validated['role_id']);
-
-        if ($role->slug !== 'super-admin' && empty($validated['branch_id'])) {
+        if (! $roles->contains('slug', 'super-admin') && empty($validated['branch_id'])) {
             throw ValidationException::withMessages([
                 'branch_id' => 'Select the branch this user is assigned to.',
             ]);
         }
 
-        if ($role->slug === 'super-admin') {
+        if ($roles->contains('slug', 'super-admin')) {
             $validated['branch_id'] = null;
         }
 
         return $validated;
+    }
+
+    private function primaryRole(Collection $roles): Role
+    {
+        return $roles->firstWhere('slug', 'super-admin') ?? $roles->first();
     }
 }

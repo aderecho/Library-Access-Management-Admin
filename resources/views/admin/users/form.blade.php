@@ -39,8 +39,13 @@
         </label>
 
         <fieldset class="user-role-selector">
-            <legend>Assign user role</legend>
-            <p class="muted">Select one role. The assigned permissions are shown below each role.</p>
+            <legend>Assign user roles</legend>
+            <p class="muted">Select one or more roles. The user receives the combined permissions from every selected role.</p>
+
+            @php
+                $selectedRoleIds = collect(old('role_ids', $user?->assignedRoles()->pluck('id')->all() ?? []))
+                    ->map(fn ($id) => (string) $id);
+            @endphp
 
             <div class="role-card-grid">
                 @foreach($roles as $role)
@@ -51,11 +56,10 @@
                     @endphp
                     <label class="role-card">
                         <input
-                            type="radio"
-                            name="role_id"
+                            type="checkbox"
+                            name="role_ids[]"
                             value="{{ $role->id }}"
-                            @checked((string) old('role_id', $user?->role_id) === (string) $role->id)
-                            required
+                            @checked($selectedRoleIds->contains((string) $role->id))
                         >
                         <span class="role-card-content">
                             <span class="role-card-header">
@@ -79,6 +83,8 @@
                     </label>
                 @endforeach
             </div>
+            @error('role_ids')<span class="field-error">{{ $message }}</span>@enderror
+            @error('role_ids.*')<span class="field-error">{{ $message }}</span>@enderror
         </fieldset>
 
         <label class="checkbox">

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\AdminDestination;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -12,6 +13,8 @@ use Throwable;
 
 class AuthController extends Controller
 {
+    public function __construct(private readonly AdminDestination $adminDestination) {}
+
     public function create()
     {
         return view('auth.login');
@@ -75,7 +78,12 @@ class AuthController extends Controller
         $request->session()->regenerate();
         $request->session()->put('auth.google_avatar', $googleUser->getAvatar());
 
-        return redirect()->intended($this->defaultDestination($user));
+        $intendedUrl = $request->session()->pull('url.intended');
+        $destination = $this->scannerSettingsDestination($user, $intendedUrl)
+            ?? $this->adminDestination->urlFor($user)
+            ?? route('login');
+
+        return redirect()->to($destination);
     }
 
     public function destroy(Request $request)
@@ -98,25 +106,19 @@ class AuthController extends Controller
         ]);
     }
 
-    private function defaultDestination($user): string
+    private function scannerSettingsDestination(User $user, mixed $intendedUrl): ?string
     {
-        $destinations = [
-            'dashboard.view' => route('admin.dashboard'),
-            'entry-monitor.view' => route('admin.entry-monitor'),
-            'transactions.view' => route('admin.transactions.index'),
-            'reports.view' => route('admin.reports.index'),
-            'advertisements.view' => route('admin.advertisements.index'),
-            'users.view' => route('admin.users.index'),
-            'roles.view' => route('admin.roles.index'),
-        ];
-
-        foreach ($destinations as $permission => $route) {
-            if ($user->hasPermission($permission)) {
-                return $route;
-            }
+        if (! is_string($intendedUrl) || ! $user->hasPermission('scanner-tokens.update')) {
+            return null;
         }
 
-        return route('login');
+        $path = parse_url($intendedUrl, PHP_URL_PATH);
+
+        if (! is_string($path) || ! preg_match('#^/scanner/settings/authorize/([A-Za-z0-9]+)$#', $path, $matches)) {
+            return null;
+        }
+
+        return route('scanner.settings.authorize', $matches[1]);
     }
 
     private function googleSsoIsConfigured(): bool

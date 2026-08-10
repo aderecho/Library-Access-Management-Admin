@@ -601,20 +601,38 @@
 
 .advertisement-edit-actions {
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: space-between;
     gap: 9px;
     padding: 16px 24px 22px;
     border-top: 1px solid #e7e3dc;
 }
 
 .advertisement-edit-cancel,
-.advertisement-edit-save {
+.advertisement-edit-save,
+.advertisement-edit-delete {
     border: 1px solid var(--ad-maroon);
     border-radius: 8px;
     padding: 10px 15px;
     cursor: pointer;
     font-size: 12px;
     font-weight: 800;
+}
+
+.advertisement-edit-actions-primary {
+    display: flex;
+    gap: 9px;
+}
+
+.advertisement-edit-delete {
+    border-color: #b42318;
+    background: #fff;
+    color: #b42318;
+}
+
+.advertisement-edit-delete:hover,
+.advertisement-edit-delete:focus-visible {
+    background: #fff1f0;
 }
 
 .advertisement-edit-cancel {
@@ -625,6 +643,127 @@
 .advertisement-edit-save {
     background: var(--ad-maroon);
     color: #fff;
+}
+
+.advertisement-delete-dialog {
+    width: min(90vw, 440px);
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid #ead8d5;
+    border-radius: 16px;
+    background: #fff;
+    color: var(--ad-ink);
+    box-shadow: 0 28px 80px rgba(42, 24, 18, .34);
+}
+
+.advertisement-delete-dialog[open] {
+    animation: advertisement-confirm-pop .2s ease-out;
+}
+
+.advertisement-delete-dialog::backdrop {
+    background: rgba(30, 20, 17, .48);
+    backdrop-filter: blur(2px);
+}
+
+.advertisement-delete-form {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 15px;
+    padding: 24px;
+}
+
+.advertisement-delete-icon {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border-radius: 50%;
+    background: #fff1f0;
+    color: #b42318;
+}
+
+.advertisement-delete-icon svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+}
+
+.advertisement-delete-copy > span {
+    color: #b42318;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.advertisement-delete-copy h2 {
+    margin: 4px 0 7px;
+    font-size: 21px;
+}
+
+.advertisement-delete-copy p {
+    margin: 0;
+    color: var(--ad-muted);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.advertisement-delete-copy strong {
+    color: var(--ad-ink);
+}
+
+.advertisement-delete-actions {
+    display: flex;
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    gap: 9px;
+    padding-top: 5px;
+}
+
+.advertisement-delete-keep,
+.advertisement-delete-confirm {
+    border: 1px solid #b42318;
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.advertisement-delete-keep {
+    background: #fff;
+    color: #59645f;
+    border-color: #d8d3cb;
+}
+
+.advertisement-delete-confirm {
+    background: #b42318;
+    color: #fff;
+}
+
+.advertisement-delete-keep:hover,
+.advertisement-delete-keep:focus-visible {
+    background: #f5f3ef;
+}
+
+.advertisement-delete-confirm:hover,
+.advertisement-delete-confirm:focus-visible {
+    background: #912018;
+}
+
+@keyframes advertisement-confirm-pop {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 @media (max-width: 720px) {
@@ -677,6 +816,16 @@
         padding-left: 18px;
     }
 
+    .advertisement-edit-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .advertisement-edit-actions-primary {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
     .advertisement-schedule > div {
         grid-template-columns: 1fr;
         gap: 3px;
@@ -685,7 +834,9 @@
 
 @media (prefers-reduced-motion: reduce) {
     .advertisement-item,
-    .advertisement-publish {
+    .advertisement-publish,
+    .advertisement-delete-dialog[open] {
         transition: none;
+        animation: none;
     }
 }

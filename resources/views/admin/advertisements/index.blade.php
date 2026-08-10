@@ -26,11 +26,12 @@
                 <label class="advertisement-dropzone" data-ad-dropzone>
                     <input class="sr-only" type="file" name="media"
                            accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
-                           data-max-bytes="{{ $maxMediaSizeMb * 1024 * 1024 }}"
+                           data-max-image-bytes="{{ $maxImageSizeMb * 1024 * 1024 }}"
+                           data-max-video-bytes="{{ $maxVideoSizeMb * 1024 * 1024 }}"
                            data-ad-media-input required>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 15v4h14v-4"/></svg>
                     <strong data-ad-file-label>Drop an image or video here, or browse</strong>
-                    <span>JPG, PNG, WebP, MP4 or WebM · Maximum {{ $maxMediaSizeMb }} MB</span>
+                    <span>JPG, PNG or WebP up to {{ $maxImageSizeMb }} MB · MP4 or WebM up to {{ $maxVideoSizeMb }} MB</span>
                     <span class="advertisement-browse">Browse media</span>
                 </label>
                 <p class="advertisement-media-warning" data-ad-media-warning role="alert" hidden></p>
@@ -93,6 +94,7 @@
                                         class="advertisement-edit-button"
                                         data-edit-advertisement
                                         data-update-url="{{ route('admin.advertisements.update', $advertisement) }}"
+                                        data-delete-url="{{ route('admin.advertisements.destroy', $advertisement) }}"
                                         data-title="{{ $advertisement->title }}"
                                         data-description="{{ $advertisement->description }}"
                                         data-starts-at="{{ $advertisement->starts_at?->format('Y-m-d\TH:i') }}"
@@ -152,7 +154,8 @@
                 </div>
                 <label>Replace media <small>Optional · leave empty to keep the current image or video</small>
                     <input type="file" name="media" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
-                           data-max-bytes="{{ $maxMediaSizeMb * 1024 * 1024 }}" data-ad-edit-media>
+                           data-max-image-bytes="{{ $maxImageSizeMb * 1024 * 1024 }}"
+                           data-max-video-bytes="{{ $maxVideoSizeMb * 1024 * 1024 }}" data-ad-edit-media>
                 </label>
                 <p class="advertisement-media-warning" data-ad-edit-media-warning role="alert" hidden></p>
                 <div class="advertisement-edit-preview">
@@ -163,8 +166,35 @@
             </div>
 
             <div class="advertisement-edit-actions">
-                <button type="button" class="advertisement-edit-cancel" data-ad-edit-cancel>Cancel</button>
-                <button type="submit" class="advertisement-edit-save">Save changes</button>
+                <button type="button" class="advertisement-edit-delete" data-ad-edit-delete>Delete advertisement</button>
+                <div class="advertisement-edit-actions-primary">
+                    <button type="button" class="advertisement-edit-cancel" data-ad-edit-cancel>Cancel</button>
+                    <button type="submit" class="advertisement-edit-save">Save changes</button>
+                </div>
+            </div>
+        </form>
+
+    </dialog>
+
+    <dialog class="advertisement-delete-dialog" data-ad-delete-dialog aria-labelledby="advertisement-delete-title" aria-describedby="advertisement-delete-description">
+        <form method="post" class="advertisement-delete-form" data-ad-delete-form>
+            @csrf
+            @method('delete')
+            <input type="hidden" name="return_status" value="{{ $status }}">
+
+            <div class="advertisement-delete-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg>
+            </div>
+            <div class="advertisement-delete-copy">
+                <span>Delete advertisement</span>
+                <h2 id="advertisement-delete-title">Are you sure?</h2>
+                <p id="advertisement-delete-description">
+                    <strong data-ad-delete-name></strong> will be permanently removed, including its uploaded media.
+                </p>
+            </div>
+            <div class="advertisement-delete-actions">
+                <button type="button" class="advertisement-delete-keep" data-ad-delete-cancel>Keep advertisement</button>
+                <button type="submit" class="advertisement-delete-confirm">Yes, delete</button>
             </div>
         </form>
     </dialog>

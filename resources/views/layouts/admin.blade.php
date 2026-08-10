@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'UP Cebu RFID Admin Portal' }}</title>
     <link rel="icon" href="{{ asset('images/las-icon.png') }}" type="image/png">
-    <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/admin.css') }}?v={{ filemtime(public_path('css/admin.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/entry-monitor.css') }}">
     <link rel="stylesheet" href="{{ asset('css/cardholder-photos.css') }}">
     <link rel="stylesheet" href="{{ asset('css/recent-activity-panel.css') }}">
@@ -118,7 +118,7 @@
             <div class="topbar-profile">
                 <div class="topbar-profile-copy">
                     <strong>{{ auth()->user()->full_name }}</strong>
-                    <span>{{ auth()->user()->role?->name ?? 'Administrator' }}</span>
+                    <span>{{ auth()->user()->assignedRoles()->pluck('name')->join(', ') ?: 'Administrator' }}</span>
                 </div>
                 @if(session('auth.google_avatar'))
                     <img

@@ -11,7 +11,8 @@ class AdvertisementController extends Controller
 {
     public function index(Request $request)
     {
-        $maxMediaSizeMb = (int) config('advertisements.max_media_size_mb', 50);
+        $maxImageSizeMb = (int) config('advertisements.max_image_size_mb', 50);
+        $maxVideoSizeMb = (int) config('advertisements.max_video_size_mb', 500);
         $status = $request->string('status', 'published')->lower()->toString();
         $status = in_array($status, ['published', 'scheduled', 'expired'], true)
             ? $status
@@ -34,14 +35,14 @@ class AdvertisementController extends Controller
             ->paginate(6)
             ->withQueryString();
 
-        return view('admin.advertisements.index', compact('advertisements', 'status', 'statusCounts', 'maxMediaSizeMb'));
+        return view('admin.advertisements.index', compact('advertisements', 'status', 'statusCounts', 'maxImageSizeMb', 'maxVideoSizeMb'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate(
-            $this->advertisementRules(mediaRequired: true),
-            $this->advertisementMessages(),
+            $this->advertisementRules($request, mediaRequired: true),
+            $this->advertisementMessages($request),
         );
 
         $validated['created_by'] = $request->user()->id;
@@ -60,8 +61,8 @@ class AdvertisementController extends Controller
     public function update(Request $request, Advertisement $advertisement)
     {
         $validated = $request->validate(
-            $this->advertisementRules(mediaRequired: false),
-            $this->advertisementMessages(),
+            $this->advertisementRules($request, mediaRequired: false),
+            $this->advertisementMessages($request),
         );
         $oldMediaPath = null;
 
@@ -88,7 +89,24 @@ class AdvertisementController extends Controller
             ->with('success', 'Advertisement updated successfully.');
     }
 
-    private function advertisementRules(bool $mediaRequired): array
+    public function destroy(Request $request, Advertisement $advertisement)
+    {
+        $mediaPath = $advertisement->image_path;
+        $advertisement->delete();
+
+        if ($mediaPath) {
+            Storage::disk('public')->delete($mediaPath);
+        }
+
+        $status = in_array($request->string('return_status')->toString(), ['published', 'scheduled', 'expired'], true)
+            ? $request->string('return_status')->toString()
+            : 'published';
+
+        return redirect()->route('admin.advertisements.index', ['status' => $status])
+            ->with('success', 'Advertisement deleted successfully.');
+    }
+
+    private function advertisementRules(Request $request, bool $mediaRequired): array
     {
         return [
             'title' => ['required', 'string', 'max:120'],
@@ -99,18 +117,33 @@ class AdvertisementController extends Controller
                 $mediaRequired ? 'required' : 'nullable',
                 'file',
                 'mimetypes:image/jpeg,image/png,image/webp,video/mp4,video/webm',
-                'max:'.((int) config('advertisements.max_media_size_mb', 50) * 1024),
+                'max:'.($this->maxUploadSizeMb($request) * 1024),
             ],
         ];
     }
 
-    private function advertisementMessages(): array
+    private function advertisementMessages(Request $request): array
     {
-        $maxMediaSizeMb = (int) config('advertisements.max_media_size_mb', 50);
+        $mediaType = $this->isVideoUpload($request) ? 'video' : 'image';
+        $maxMediaSizeMb = $this->maxUploadSizeMb($request);
+        $maxVideoSizeMb = (int) config('advertisements.max_video_size_mb', 500);
 
         return [
-            'media.max' => "The media must not exceed {$maxMediaSizeMb} MB.",
-            'media.uploaded' => "The media could not be uploaded. Confirm that PHP and Nginx allow uploads up to {$maxMediaSizeMb} MB.",
+            'media.max' => "The {$mediaType} must not exceed {$maxMediaSizeMb} MB.",
+            'media.uploaded' => "The media could not be uploaded. Confirm that PHP and Nginx allow video uploads up to {$maxVideoSizeMb} MB.",
         ];
+    }
+
+    private function maxUploadSizeMb(Request $request): int
+    {
+        return $this->isVideoUpload($request)
+            ? (int) config('advertisements.max_video_size_mb', 500)
+            : (int) config('advertisements.max_image_size_mb', 50);
+    }
+
+    private function isVideoUpload(Request $request): bool
+    {
+        return $request->hasFile('media')
+            && str_starts_with((string) $request->file('media')->getMimeType(), 'video/');
     }
 }

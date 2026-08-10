@@ -15,7 +15,10 @@ const validateMediaSize = (input, warning) => {
     warning.hidden = true;
     warning.textContent = '';
 
-    const maxBytes = Number(input.dataset.maxBytes || 50 * 1024 * 1024);
+    const isVideo = file.type.startsWith('video/');
+    const maxBytes = Number(isVideo
+        ? input.dataset.maxVideoBytes || 500 * 1024 * 1024
+        : input.dataset.maxImageBytes || 50 * 1024 * 1024);
     if (file.size <= maxBytes) return true;
 
     const maxMegabytes = Math.round(maxBytes / (1024 * 1024));
@@ -88,6 +91,11 @@ const advertisementEditDialog = document.querySelector('[data-ad-edit-dialog]');
 
 if (advertisementEditDialog) {
     const editForm = advertisementEditDialog.querySelector('[data-ad-edit-form]');
+    const deleteDialog = document.querySelector('[data-ad-delete-dialog]');
+    const deleteForm = deleteDialog.querySelector('[data-ad-delete-form]');
+    const deleteButton = advertisementEditDialog.querySelector('[data-ad-edit-delete]');
+    const deleteName = deleteDialog.querySelector('[data-ad-delete-name]');
+    const deleteCancel = deleteDialog.querySelector('[data-ad-delete-cancel]');
     const editHeading = advertisementEditDialog.querySelector('[data-ad-edit-heading]');
     const editTitle = advertisementEditDialog.querySelector('[data-ad-edit-title]');
     const editDescription = advertisementEditDialog.querySelector('[data-ad-edit-description]');
@@ -121,6 +129,8 @@ if (advertisementEditDialog) {
         button.addEventListener('click', () => {
             const data = button.dataset;
             editForm.action = data.updateUrl;
+            deleteForm.action = data.deleteUrl;
+            deleteName.textContent = `“${data.title}”`;
             editHeading.textContent = data.title;
             editTitle.value = data.title;
             editDescription.value = data.description || '';
@@ -145,6 +155,19 @@ if (advertisementEditDialog) {
         if (editPreviewUrl) URL.revokeObjectURL(editPreviewUrl);
         editPreviewUrl = URL.createObjectURL(file);
         showEditPreview(file.type.startsWith('video/') ? 'video' : 'image', editPreviewUrl);
+    });
+
+    deleteButton.addEventListener('click', () => {
+        deleteDialog.showModal();
+        deleteCancel.focus();
+    });
+
+    deleteCancel.addEventListener('click', () => deleteDialog.close());
+    deleteDialog.addEventListener('click', (event) => {
+        if (event.target === deleteDialog) deleteDialog.close();
+    });
+    deleteDialog.addEventListener('close', () => {
+        if (advertisementEditDialog.open) deleteButton.focus();
     });
 
     advertisementEditDialog.querySelector('[data-ad-edit-close]').addEventListener('click', closeEditDialog);

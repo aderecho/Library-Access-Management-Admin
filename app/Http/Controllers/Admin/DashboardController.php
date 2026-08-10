@@ -3,21 +3,33 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Employee;
 use App\Models\Branch;
+use App\Models\Employee;
 use App\Models\RfidTransaction;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\AdminDestination;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
+    public function __construct(private readonly AdminDestination $adminDestination) {}
+
     public function index(Request $request)
     {
         $user = $request->user();
-        $branches = $user->role?->slug === 'super-admin'
+
+        if (! $user->hasPermission('dashboard.view')) {
+            $destination = $this->adminDestination->urlFor($user);
+
+            abort_unless($destination, 403, 'You are not authorized to access this page.');
+
+            return redirect()->to($destination);
+        }
+
+        $branches = $user->isSuperAdmin()
             ? Branch::where('is_active', true)->orderBy('name')->get()
             : collect([$user->branch])->filter();
         $branchIds = $branches->pluck('id')->map(fn ($id) => (int) $id)->all();

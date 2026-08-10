@@ -14,11 +14,11 @@
     </div>
 
     <form class="filters" method="get">
-        <select name="branch_id" @disabled(auth()->user()->role?->slug !== 'super-admin')>
-            @if(auth()->user()->role?->slug === 'super-admin')<option value="">All branches</option>@endif
+        <select name="branch_id" @disabled(! auth()->user()->isSuperAdmin())>
+            @if(auth()->user()->isSuperAdmin())<option value="">All branches</option>@endif
             @foreach($branches as $branch)<option value="{{ $branch->id }}" @selected((int) $branchId === $branch->id)>{{ $branch->name }}</option>@endforeach
         </select>
-        @if(auth()->user()->role?->slug !== 'super-admin')<input type="hidden" name="branch_id" value="{{ $branchId }}">@endif
+        @if(! auth()->user()->isSuperAdmin())<input type="hidden" name="branch_id" value="{{ $branchId }}">@endif
         <select name="period">
             <option value="daily" @selected(request('period', 'daily') === 'daily')>Daily</option>
             <option value="monthly" @selected(request('period') === 'monthly')>Monthly</option>
