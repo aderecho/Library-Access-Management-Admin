@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\ScannerToken;
 use App\Models\Student;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -77,6 +78,35 @@ class RfidScanTest extends TestCase
             'campus_id' => $employee->employee_number,
             'status' => 'valid',
         ]);
+    }
+
+    public function test_every_new_entry_is_recorded_in_philippine_time(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-14 16:54:22', 'UTC'));
+
+        try {
+            $employee = Employee::create([
+                'employee_number' => 'UPCEBU-EMP-PHT',
+                'rfid_code' => 'employee-pht-rfid',
+                'first_name' => 'Philippine',
+                'last_name' => 'Time',
+                'position' => 'Staff',
+                'office' => 'Library',
+                'status' => 'Active Employee',
+                'is_active' => true,
+            ]);
+
+            $this->withHeader('X-Scanner-Token', $this->scannerToken)
+                ->postJson('/api/rfid/scan', ['rfid_code' => $employee->rfid_code])
+                ->assertOk();
+
+            $this->assertDatabaseHas('rfid_transactions', [
+                'employee_id' => $employee->id,
+                'scanned_at' => '2026-08-15 00:54:22',
+            ]);
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 
     public function test_inactive_employee_rfid_is_denied(): void
