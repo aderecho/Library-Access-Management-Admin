@@ -11,6 +11,8 @@ return new class extends Migration
 
     private const STARTING_AT = '2026-08-01 00:00:00';
 
+    private const ENDING_BEFORE = '2026-08-15 00:00:00';
+
     public function up(): void
     {
         if (! Schema::hasTable(self::BACKUP_TABLE)) {
@@ -24,6 +26,7 @@ return new class extends Migration
             ->select(['id', 'scanned_at'])
             ->whereNotNull('scanned_at')
             ->where('scanned_at', '>=', self::STARTING_AT)
+            ->where('scanned_at', '<', self::ENDING_BEFORE)
             ->orderBy('id')
             ->chunkById(500, function ($transactions): void {
                 DB::table(self::BACKUP_TABLE)->insertOrIgnore(
