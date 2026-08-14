@@ -66,7 +66,7 @@ return new class extends Migration
                 INNER JOIN rfid_scan_time_august_2026_backups AS backup
                     ON backup.transaction_id = rt.id
             SQL),
-            default => throw new \RuntimeException('Unsupported database driver for RFID scan-time correction.'),
+            default => throw new RuntimeException('Unsupported database driver for RFID scan-time correction.'),
         };
     }
 
@@ -105,7 +105,7 @@ return new class extends Migration
                 INNER JOIN rfid_scan_time_august_2026_backups AS backup
                     ON backup.transaction_id = rt.id
             SQL),
-            default => throw new \RuntimeException('Unsupported database driver for RFID scan-time restoration.'),
+            default => throw new RuntimeException('Unsupported database driver for RFID scan-time restoration.'),
         };
 
         // Keep the original values permanently for auditing and recovery.

@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 
 class RfidScanController extends Controller
 {
+    private const ENTRY_TIMEZONE = 'Asia/Manila';
+
     public function store(Request $request, AmisStudentVerifier $amisStudentVerifier)
     {
         $scannerToken = $request->attributes->get('scannerToken');
@@ -43,7 +45,7 @@ class RfidScanController extends Controller
             'transaction_type' => 'time_in',
             'status' => $scan['valid'] ? 'valid' : 'invalid',
             'message' => $scan['message'],
-            'scanned_at' => now(),
+            'scanned_at' => now(self::ENTRY_TIMEZONE),
         ]);
 
         RfidScanRecorded::dispatch($transaction);
