@@ -9,13 +9,13 @@ const notifyMediaLimit = (message) => {
 const isVideoFile = (file) => file.type.startsWith('video/')
     || /\.(mp4|webm)$/i.test(file.name);
 
-const playbackErrorMessage = 'This video cannot be played in the browser. Convert it to MP4 with H.264 video and AAC audio, then choose the converted file.';
+const playbackWarningMessage = 'Video preview is unavailable. You can still publish this file, but verify playback after upload. For broad browser support, use MP4 with H.264 video and AAC audio.';
 
-const showPlaybackError = (input, warning) => {
-    input.setCustomValidity(playbackErrorMessage);
+const showPlaybackWarning = (input, warning) => {
+    input.setCustomValidity('');
     warning.hidden = false;
-    warning.textContent = playbackErrorMessage;
-    notifyMediaLimit(playbackErrorMessage);
+    warning.textContent = playbackWarningMessage;
+    notifyMediaLimit(playbackWarningMessage);
 };
 
 const clearPlaybackError = (input, warning) => {
@@ -68,7 +68,7 @@ if (advertisementInput) {
         }
     });
     videoPreview.addEventListener('error', () => {
-        if (advertisementInput.files?.[0]) showPlaybackError(advertisementInput, mediaWarning);
+        if (advertisementInput.files?.[0]) showPlaybackWarning(advertisementInput, mediaWarning);
     });
 
     const resetPreview = () => {
@@ -140,7 +140,7 @@ if (advertisementEditDialog) {
         }
     });
     editVideoPreview.addEventListener('error', () => {
-        if (editMedia.files?.[0]) showPlaybackError(editMedia, editMediaWarning);
+        if (editMedia.files?.[0]) showPlaybackWarning(editMedia, editMediaWarning);
     });
 
     const showEditPreview = (mediaType, mediaUrl) => {
