@@ -39,6 +39,15 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Report Viewer', 'description' => 'Reserved for read-only report access.']
         );
 
+        Role::firstOrCreate(
+            ['slug' => 'rfid-directory'],
+            [
+                'name' => 'RFID Directory',
+                'description' => 'Staff who view and update student and employee RFID records.',
+                'permissions' => ['rfid-directory.view', 'rfid-directory.update'],
+            ]
+        );
+
         $this->call([
             UserSeeder::class,
             StudentSeeder::class,

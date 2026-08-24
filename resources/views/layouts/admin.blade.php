@@ -56,6 +56,12 @@
                     <span>Advertisements</span>
                 </a>
             @endif
+            @if(auth()->user()->hasPermission('rfid-directory.view'))
+                <a class="nav-link {{ request()->routeIs('admin.rfid-directory.*') ? 'active' : '' }}" href="{{ route('admin.rfid-directory.index') }}">
+                    <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5M8 17h3"/><path d="M17 12v5m-2.5-2.5h5"/></svg></span>
+                    <span>RFID Directory</span>
+                </a>
+            @endif
 
             @if(auth()->user()->hasPermission('users.view') || auth()->user()->hasPermission('roles.view') || auth()->user()->hasPermission('scanner-tokens.view') || auth()->user()->hasPermission('branches.view'))
                 <div class="nav-heading">Administration</div>

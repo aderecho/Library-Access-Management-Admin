@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdvertisementController;
 use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\RfidDirectoryController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\ScannerTokenController;
 use App\Http\Controllers\Admin\TransactionController;
@@ -42,6 +43,12 @@ Route::prefix('admin')
         Route::get('/reports', [ReportController::class, 'index'])->middleware('permission:reports.view')->name('reports.index');
         Route::get('/reports/export', [ReportController::class, 'export'])->middleware('permission:reports.export')->name('reports.export');
         Route::get('/reports/export-excel', [ReportController::class, 'exportExcel'])->middleware('permission:reports.export')->name('reports.export-excel');
+        Route::get('/rfid-directory', [RfidDirectoryController::class, 'index'])->middleware('permission:rfid-directory.view')->name('rfid-directory.index');
+        Route::put('/rfid-directory/{cardholderType}/{cardholderId}', [RfidDirectoryController::class, 'update'])
+            ->whereIn('cardholderType', ['student', 'employee'])
+            ->whereNumber('cardholderId')
+            ->middleware('permission:rfid-directory.update')
+            ->name('rfid-directory.update');
 
         Route::get('/users', [UserController::class, 'index'])->middleware('permission:users.view')->name('users.index');
         Route::get('/users/create', [UserController::class, 'create'])->middleware('permission:users.create')->name('users.create');
