@@ -127,6 +127,7 @@ class AdvertisementManagementTest extends TestCase
         $this->assertStringContainsString('input.dataset.maxVideoBytes', $script);
         $this->assertStringContainsString('input.dataset.maxImageBytes', $script);
         $this->assertStringContainsString('/\\.(mp4|webm)$/i.test(file.name)', $script);
+        $this->assertStringContainsString('You can still publish this file', $script);
         $this->assertStringContainsString('H.264 video and AAC audio', $script);
         $this->assertStringContainsString("videoPreview.addEventListener('error'", $script);
         $this->assertStringContainsString("new CustomEvent('admin:notify'", $script);
