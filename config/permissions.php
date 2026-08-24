@@ -9,6 +9,10 @@ return [
             'reports.view' => 'View usage reports',
             'reports.export' => 'Export reports as CSV',
         ],
+        'RFID directory' => [
+            'rfid-directory.view' => 'View student and employee RFID records',
+            'rfid-directory.update' => 'Update student and employee RFID records',
+        ],
         'Advertisement management' => [
             'advertisements.view' => 'View published advertisements',
             'advertisements.create' => 'Create and edit image or video advertisements',

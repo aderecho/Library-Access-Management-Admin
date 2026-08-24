@@ -15,6 +15,7 @@ class AdminDestination
         'transactions.view' => 'admin.transactions.index',
         'reports.view' => 'admin.reports.index',
         'advertisements.view' => 'admin.advertisements.index',
+        'rfid-directory.view' => 'admin.rfid-directory.index',
         'users.view' => 'admin.users.index',
         'roles.view' => 'admin.roles.index',
         'scanner-tokens.view' => 'admin.scanner-tokens.index',

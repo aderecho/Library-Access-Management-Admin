@@ -61,6 +61,15 @@ class UserSeeder extends Seeder
                     'reports.export',
                 ],
             ],
+            [
+                'name' => 'RFID Directory',
+                'slug' => 'rfid-directory',
+                'description' => 'Staff who view and update student and employee RFID records.',
+                'permissions' => [
+                    'rfid-directory.view',
+                    'rfid-directory.update',
+                ],
+            ],
         ])->mapWithKeys(function (array $role) {
             $model = Role::updateOrCreate(
                 ['slug' => $role['slug']],
