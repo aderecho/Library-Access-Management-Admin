@@ -11,3 +11,26 @@
 .advertisement-preview [hidden] {
     display: none;
 }
+
+.advertisement-video-frame {
+    display: grid;
+    gap: 10px;
+}
+
+.advertisement-video-frame video {
+    width: 100%;
+}
+
+.advertisement-playback-error {
+    margin: 0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #fff1cf;
+    color: #7a5512;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.advertisement-playback-error[hidden] {
+    display: none;
+}
