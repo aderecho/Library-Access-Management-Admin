@@ -6,6 +6,24 @@ const notifyMediaLimit = (message) => {
     }));
 };
 
+const isVideoFile = (file) => file.type.startsWith('video/')
+    || /\.(mp4|webm)$/i.test(file.name);
+
+const playbackErrorMessage = 'This video cannot be played in the browser. Convert it to MP4 with H.264 video and AAC audio, then choose the converted file.';
+
+const showPlaybackError = (input, warning) => {
+    input.setCustomValidity(playbackErrorMessage);
+    warning.hidden = false;
+    warning.textContent = playbackErrorMessage;
+    notifyMediaLimit(playbackErrorMessage);
+};
+
+const clearPlaybackError = (input, warning) => {
+    input.setCustomValidity('');
+    warning.hidden = true;
+    warning.textContent = '';
+};
+
 const validateMediaSize = (input, warning) => {
     const file = input.files?.[0];
 
@@ -15,7 +33,7 @@ const validateMediaSize = (input, warning) => {
     warning.hidden = true;
     warning.textContent = '';
 
-    const isVideo = file.type.startsWith('video/');
+    const isVideo = isVideoFile(file);
     const maxBytes = Number(isVideo
         ? input.dataset.maxVideoBytes || 500 * 1024 * 1024
         : input.dataset.maxImageBytes || 50 * 1024 * 1024);
@@ -44,6 +62,15 @@ if (advertisementInput) {
     const defaultFileLabel = fileLabel.textContent;
     let previewUrl = null;
 
+    videoPreview.addEventListener('loadedmetadata', () => {
+        if (Number.isFinite(videoPreview.duration) && videoPreview.duration > 0) {
+            clearPlaybackError(advertisementInput, mediaWarning);
+        }
+    });
+    videoPreview.addEventListener('error', () => {
+        if (advertisementInput.files?.[0]) showPlaybackError(advertisementInput, mediaWarning);
+    });
+
     const resetPreview = () => {
         if (previewUrl) URL.revokeObjectURL(previewUrl);
         previewUrl = null;
@@ -65,7 +92,7 @@ if (advertisementInput) {
 
         if (previewUrl) URL.revokeObjectURL(previewUrl);
         previewUrl = URL.createObjectURL(file);
-        const isVideo = file.type.startsWith('video/');
+        const isVideo = isVideoFile(file);
         imagePreview.hidden = isVideo;
         videoPreview.hidden = !isVideo;
 
@@ -106,6 +133,15 @@ if (advertisementEditDialog) {
     const editVideoPreview = advertisementEditDialog.querySelector('[data-ad-edit-video-preview]');
     const editMediaWarning = advertisementEditDialog.querySelector('[data-ad-edit-media-warning]');
     let editPreviewUrl = null;
+
+    editVideoPreview.addEventListener('loadedmetadata', () => {
+        if (editMedia.files?.[0] && Number.isFinite(editVideoPreview.duration) && editVideoPreview.duration > 0) {
+            clearPlaybackError(editMedia, editMediaWarning);
+        }
+    });
+    editVideoPreview.addEventListener('error', () => {
+        if (editMedia.files?.[0]) showPlaybackError(editMedia, editMediaWarning);
+    });
 
     const showEditPreview = (mediaType, mediaUrl) => {
         const isVideo = mediaType === 'video';
@@ -154,7 +190,7 @@ if (advertisementEditDialog) {
 
         if (editPreviewUrl) URL.revokeObjectURL(editPreviewUrl);
         editPreviewUrl = URL.createObjectURL(file);
-        showEditPreview(file.type.startsWith('video/') ? 'video' : 'image', editPreviewUrl);
+        showEditPreview(isVideoFile(file) ? 'video' : 'image', editPreviewUrl);
     });
 
     deleteButton.addEventListener('click', () => {
@@ -183,3 +219,10 @@ if (advertisementEditDialog) {
         }
     });
 }
+
+document.querySelectorAll('[data-ad-library-video]').forEach((video) => {
+    video.addEventListener('error', () => {
+        const error = video.parentElement?.querySelector('[data-ad-playback-error]');
+        if (error) error.hidden = false;
+    });
+});

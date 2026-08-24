@@ -39,7 +39,7 @@
                 <div class="advertisement-preview" data-ad-preview-wrap hidden>
                     <span>Media preview</span>
                     <img data-ad-image-preview alt="Selected advertisement preview" hidden>
-                    <video data-ad-video-preview controls muted playsinline hidden></video>
+                    <video data-ad-video-preview controls muted preload="metadata" playsinline hidden></video>
                 </div>
 
                 <button class="advertisement-publish" type="submit">
@@ -79,7 +79,10 @@
                 @php($displayStatus = $advertisement->displayStatus())
                 <article class="advertisement-item">
                     @if($advertisement->media_type === 'video')
-                        <video src="{{ asset('storage/'.$advertisement->image_path) }}" controls muted preload="metadata" playsinline></video>
+                        <div class="advertisement-video-frame">
+                            <video src="{{ asset('storage/'.$advertisement->image_path) }}" controls muted preload="metadata" playsinline data-ad-library-video></video>
+                            <p class="advertisement-playback-error" data-ad-playback-error hidden>Unable to play this video. Use an MP4 encoded with H.264 video and AAC audio.</p>
+                        </div>
                     @else
                         <img src="{{ asset('storage/'.$advertisement->image_path) }}" alt="{{ $advertisement->title }}">
                     @endif
@@ -161,7 +164,7 @@
                 <div class="advertisement-edit-preview">
                     <span>Current media</span>
                     <img data-ad-edit-image-preview alt="Advertisement media preview" hidden>
-                    <video data-ad-edit-video-preview controls muted playsinline hidden></video>
+                    <video data-ad-edit-video-preview controls muted preload="metadata" playsinline hidden></video>
                 </div>
             </div>
 
