@@ -298,6 +298,19 @@ class ReportController extends Controller
     {
         $period = $request->string('period', 'daily')->toString();
 
+        $request->validate([
+            'from' => ['nullable', 'required_with:to', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'required_with:from', 'date_format:Y-m-d', 'after_or_equal:from'],
+        ]);
+
+        if ($request->filled('from') && $request->filled('to')) {
+            return [
+                Carbon::parse($request->input('from'))->startOfDay(),
+                Carbon::parse($request->input('to'))->endOfDay(),
+                $period,
+            ];
+        }
+
         return match ($period) {
             'monthly' => [now()->startOfMonth(), now()->endOfMonth(), 'monthly'],
             'yearly' => [now()->startOfYear(), now()->endOfYear(), 'yearly'],

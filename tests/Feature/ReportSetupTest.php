@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Branch;
 use App\Models\RfidTransaction;
 use App\Models\Role;
 use App\Models\Student;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
@@ -14,6 +16,124 @@ use ZipArchive;
 class ReportSetupTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_september_report_totals_match_dashboard_including_unidentified_invalid_scans(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-01 12:00:00'));
+        $admin = $this->createReportAdmin();
+        $admin->role->update(['permissions' => ['dashboard.view', 'reports.view', 'reports.export']]);
+
+        foreach ([
+            ['2026-09-01 00:00:00', 'valid', '2026-001'],
+            ['2026-09-30 23:59:59', 'invalid', null],
+            ['2026-10-01 00:00:00', 'valid', '2026-002'],
+        ] as [$scannedAt, $status, $campusId]) {
+            RfidTransaction::create([
+                'branch_id' => $this->defaultBranch()->id,
+                'rfid_code' => fake()->uuid(),
+                'campus_id' => $campusId,
+                'cardholder_name' => $campusId ? 'Test Student' : 'Unknown Cardholder',
+                'transaction_type' => 'time_in',
+                'status' => $status,
+                'scanned_at' => $scannedAt,
+            ]);
+        }
+
+        $dashboard = $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk();
+        $september = $dashboard->viewData('chart')->get(8);
+        $this->assertSame(2, $september['total']);
+        $this->assertSame(1, $september['valid']);
+        $this->assertSame(1, $september['invalid']);
+
+        $report = $this->get(route('admin.reports.index', [
+            'period' => 'monthly', 'from' => '2026-09-01', 'to' => '2026-09-30',
+        ]))->assertOk();
+
+        foreach (['total', 'valid', 'invalid'] as $metric) {
+            $this->assertSame($september[$metric], $report->viewData('summary')[$metric]);
+        }
+        $this->assertSame(1, (int) $report->viewData('cardholders')->sum('frequency'));
+    }
+
+    public function test_selected_september_dates_are_used_for_reports_and_exports_in_october(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-01 12:00:00'));
+        $admin = $this->createReportAdmin();
+
+        foreach ([
+            ['2026-08-31 23:59:59', 'August Student'],
+            ['2026-09-01 00:00:00', 'September First Student'],
+            ['2026-09-30 23:59:59', 'September Last Student'],
+            ['2026-10-01 00:00:00', 'October Student'],
+        ] as [$scannedAt, $name]) {
+            RfidTransaction::create([
+                'branch_id' => $this->defaultBranch()->id,
+                'cardholder_type' => 'student',
+                'rfid_code' => $name,
+                'campus_id' => $name,
+                'cardholder_name' => $name,
+                'transaction_type' => 'time_in',
+                'status' => 'valid',
+                'scanned_at' => $scannedAt,
+            ]);
+        }
+
+        $this->actingAs($admin);
+
+        foreach (['daily', 'monthly', 'yearly', 'custom'] as $period) {
+            $filters = ['period' => $period, 'from' => '2026-09-01', 'to' => '2026-09-30'];
+            $this->get(route('admin.reports.index', $filters))
+                ->assertOk()
+                ->assertSee('2026-09-01 00:00 to 2026-09-30 23:59')
+                ->assertSee('September First Student')
+                ->assertSee('September Last Student')
+                ->assertDontSee('August Student')
+                ->assertDontSee('October Student')
+                ->assertViewHas('summary', fn ($summary) => $summary['total'] === 2 && $summary['unique_users'] === 2);
+
+            $csv = $this->get(route('admin.reports.export', $filters))->assertOk()->streamedContent();
+            $this->assertStringContainsString('September First Student', $csv);
+            $this->assertStringContainsString('September Last Student', $csv);
+            $this->assertStringNotContainsString('August Student', $csv);
+            $this->assertStringNotContainsString('October Student', $csv);
+
+            $response = $this->get(route('admin.reports.export-excel', $filters))->assertOk();
+            $path = $response->baseResponse->getFile()->getPathname();
+            $spreadsheet = IOFactory::load($path);
+            $rows = $spreadsheet->getSheetByName('Report')->toArray();
+            $this->assertSame(['September First Student', 'September Last Student'], array_column(array_slice($rows, 1), 2));
+            $spreadsheet->disconnectWorksheets();
+            unlink($path);
+        }
+    }
+
+    public function test_monthly_report_defaults_to_current_month_without_selected_dates(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-01 12:00:00'));
+
+        $this->actingAs($this->createReportAdmin())
+            ->get(route('admin.reports.index', ['period' => 'monthly', 'from' => '', 'to' => '']))
+            ->assertOk()
+            ->assertSee('2026-10-01 00:00 to 2026-10-31 23:59');
+    }
+
+    public function test_report_and_exports_reject_invalid_or_incomplete_date_ranges(): void
+    {
+        $this->actingAs($this->createReportAdmin());
+
+        foreach (['index', 'export', 'export-excel'] as $action) {
+            foreach ([
+                [['from' => '2026-09-30', 'to' => '2026-09-01'], 'to'],
+                [['from' => 'invalid', 'to' => '2026-09-30'], 'from'],
+                [['from' => '2026-09-01'], 'to'],
+                [['to' => '2026-09-30'], 'from'],
+            ] as [$dates, $error]) {
+                $this->getJson(route('admin.reports.'.$action, ['period' => 'monthly', ...$dates]))
+                    ->assertUnprocessable()
+                    ->assertJsonValidationErrors($error);
+            }
+        }
+    }
 
     public function test_report_groups_cardholder_scans_and_displays_frequency(): void
     {
@@ -140,7 +260,7 @@ class ReportSetupTest extends TestCase
     public function test_branch_report_excludes_entries_from_another_branch(): void
     {
         $admin = $this->createReportAdmin();
-        $other = \App\Models\Branch::create(['name' => 'Other Branch', 'code' => 'OTHER']);
+        $other = Branch::create(['name' => 'Other Branch', 'code' => 'OTHER']);
         foreach ([[$this->defaultBranch(), 'Visible Branch Student'], [$other, 'Hidden Branch Student']] as [$branch, $name]) {
             RfidTransaction::create([
                 'branch_id' => $branch->id,

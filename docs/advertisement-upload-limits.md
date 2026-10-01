@@ -33,6 +33,8 @@ sudo systemctl restart php8.3-fpm
 sudo nginx -t
 sudo systemctl reload nginx
 php artisan optimize:clear
-php -i | grep -E 'upload_max_filesize|post_max_size'
+sudo php-fpm8.3 -i | grep -E 'upload_max_filesize|post_max_size'
 sudo nginx -T | grep client_max_body_size
 ```
+
+Use the PHP-FPM check above for the website runtime. A plain `php -i` checks PHP CLI and can load a different configuration.
