@@ -254,6 +254,18 @@ add_note(doc, "Seeder boundary", "start.sh does not seed data. Run php artisan d
 
 doc.add_page_break()
 doc.add_heading("11. Configure Nginx", level=1)
+start_step_sequence(doc)
+add_step(doc, "Allow advertisement uploads in PHP-FPM")
+add_code(doc,
+    "sudo tee /etc/php/8.3/fpm/conf.d/99-up-cebu-rfid-uploads.ini >/dev/null <<'INI'\n"
+    "upload_max_filesize=500M\n"
+    "post_max_size=525M\n"
+    "max_execution_time=300\n"
+    "max_input_time=300\n"
+    "INI\n"
+    "sudo systemctl restart php8.3-fpm\n"
+    "sudo php-fpm8.3 -i | grep -E 'upload_max_filesize|post_max_size'"
+)
 doc.add_paragraph("Create /etc/nginx/sites-available/up-cebu-rfid-admin with the following configuration:")
 add_code(doc,
     "server {\n"
@@ -286,7 +298,7 @@ add_code(doc,
     "        proxy_pass http://127.0.0.1:8080;\n"
     "    }\n\n"
     "    location ~ /\\. { deny all; }\n"
-    "    client_max_body_size 55M;\n"
+    "    client_max_body_size 525M;\n"
     "}"
 )
 start_step_sequence(doc)
