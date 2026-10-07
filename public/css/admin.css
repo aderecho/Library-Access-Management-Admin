@@ -374,3 +374,5 @@ a.admin-page-link:focus-visible{outline:3px solid rgba(217,155,34,.38);outline-o
     .rfid-edit-section{padding:16px}
     .rfid-edit-form .form-actions{bottom:-22px;margin:0 -22px -22px;padding:16px 22px}
 }
+
+.rfid-create-options{margin-bottom:20px}.rfid-create-options summary{cursor:pointer;width:fit-content}.rfid-create-options .form-actions{margin-top:12px}

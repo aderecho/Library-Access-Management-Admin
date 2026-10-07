@@ -164,7 +164,10 @@ class RfidDirectoryTest extends TestCase
         $this->actingAs($user)
             ->get(route('admin.rfid-directory.index'))
             ->assertOk()
-            ->assertDontSee('>Edit<', false);
+            ->assertDontSee('>Edit<', false)
+            ->assertDontSee('Add New Cardholder');
+
+        $this->post(route('admin.rfid-directory.store', 'student'), [])->assertForbidden();
 
         $this->actingAs($user)
             ->put(route('admin.rfid-directory.update', ['student', $student->id]), ['rfid_code' => 'FORBIDDEN'])
@@ -283,6 +286,54 @@ class RfidDirectoryTest extends TestCase
         } finally {
             DB::statement('PRAGMA case_sensitive_like = OFF');
         }
+    }
+
+    public function test_directory_staff_can_create_students_and_employees(): void
+    {
+        $this->actingAs($this->directoryUser())->get(route('admin.rfid-directory.index'))
+            ->assertOk()->assertSee('Add New Cardholder')->assertSee('Add Student')->assertSee('Add Employee');
+
+        foreach (['student', 'employee'] as $type) {
+            $identifier = $type === 'student' ? 'campus_id' : 'employee_number';
+            $payload = [
+                $identifier => $type === 'student' ? '2026 12345' : 'EMP-12345',
+                'rfid_code' => ' RFID-'.$type.' ',
+                'first_name' => 'Maria', 'middle_name' => 'Cebu', 'last_name' => 'Person', 'suffix' => 'Jr.',
+                'status' => 'Inactive', 'is_active' => '0',
+                ($type === 'student' ? 'program' : 'position') => 'Primary detail',
+                ($type === 'student' ? 'college' : 'office') => 'Secondary detail',
+            ];
+            if ($type === 'student') {
+                $payload['year_level'] = 'Third Year';
+            }
+            $this->post(route('admin.rfid-directory.store', $type), $payload)
+                ->assertRedirect(route('admin.rfid-directory.index'))->assertSessionHasNoErrors();
+            $payload[$identifier] = $type === 'student' ? '202612345' : 'EMP-12345';
+            $payload['rfid_code'] = 'RFID-'.$type;
+            $this->assertDatabaseHas($type === 'student' ? 'students' : 'employees', $payload);
+        }
+    }
+
+    public function test_creation_rejects_duplicate_rfid_identifiers_and_missing_required_fields(): void
+    {
+        Student::create(['campus_id' => '202612345', 'rfid_code' => 'TAKEN-STUDENT', 'name' => 'Existing Student']);
+        Employee::create(['employee_number' => 'EMP-12345', 'rfid_code' => 'TAKEN-EMPLOYEE', 'name' => 'Existing Employee']);
+        $this->actingAs($this->directoryUser());
+
+        foreach (['student', 'employee'] as $type) {
+            $identifier = $type === 'student' ? 'campus_id' : 'employee_number';
+            $payload = [
+                $identifier => $type === 'student' ? '2026 12345' : 'EMP-12345',
+                'rfid_code' => $type === 'student' ? ' TAKEN-EMPLOYEE ' : ' TAKEN-STUDENT ',
+                'first_name' => 'New', 'last_name' => 'Person', 'status' => 'Active', 'is_active' => '1',
+            ];
+            $this->post(route('admin.rfid-directory.store', $type), $payload)
+                ->assertSessionHasErrors([$identifier, 'rfid_code']);
+            $this->post(route('admin.rfid-directory.store', $type), [])
+                ->assertSessionHasErrors([$identifier, 'rfid_code', 'first_name', 'last_name', 'status', 'is_active']);
+        }
+        $this->assertDatabaseCount('students', 1);
+        $this->assertDatabaseCount('employees', 1);
     }
 
     private function directoryUser(): User
