@@ -52,7 +52,25 @@ class ReportSetupTest extends TestCase
         foreach (['total', 'valid', 'invalid'] as $metric) {
             $this->assertSame($september[$metric], $report->viewData('summary')[$metric]);
         }
-        $this->assertSame(1, (int) $report->viewData('cardholders')->sum('frequency'));
+        $this->assertSame(2, (int) $report->viewData('cardholders')->sum('frequency'));
+        $this->assertSame(1, $report->viewData('summary')['unique_users']);
+        $report->assertSee('Unidentified');
+
+        $filters = ['period' => 'monthly', 'from' => '2026-09-01', 'to' => '2026-09-30'];
+        $csv = $this->get(route('admin.reports.export', $filters))->assertOk()->streamedContent();
+        $rows = array_map(fn ($line) => str_getcsv($line), explode("\n", trim($csv)));
+        $this->assertSame(2, array_sum(array_column(array_slice($rows, 1), 6)));
+        $this->assertStringContainsString('Unidentified', $csv);
+        $this->assertStringNotContainsString('2026-002', $csv);
+
+        $response = $this->get(route('admin.reports.export-excel', $filters))->assertOk();
+        $path = $response->baseResponse->getFile()->getPathname();
+        $spreadsheet = IOFactory::load($path);
+        $rows = array_slice($spreadsheet->getSheetByName('Report')->toArray(), 1);
+        $this->assertSame(2, (int) array_sum(array_column($rows, 6)));
+        $this->assertContains('Unidentified', array_column($rows, 1));
+        $spreadsheet->disconnectWorksheets();
+        unlink($path);
     }
 
     public function test_selected_september_dates_are_used_for_reports_and_exports_in_october(): void

@@ -52,30 +52,7 @@ class ReportController extends Controller
             ];
         });
 
-        $cardholders = (clone $query)
-            ->whereNotNull('campus_id')
-            ->select([
-                'branch_id',
-                'campus_id',
-                'cardholder_name',
-                'cardholder_type',
-                'program',
-                'college_department',
-                'year_level',
-            ])
-            ->selectRaw('COUNT(*) as frequency')
-            ->groupBy([
-                'branch_id',
-                'campus_id',
-                'cardholder_name',
-                'cardholder_type',
-                'program',
-                'college_department',
-                'year_level',
-            ])
-            ->orderByDesc('frequency')
-            ->orderBy('cardholder_name')
-            ->with('branch')
+        $cardholders = $this->cardholderFrequency($from, $to, $branchId)
             ->paginate(20)
             ->withQueryString();
 
@@ -93,37 +70,13 @@ class ReportController extends Controller
             $output = fopen('php://output', 'w');
             fputcsv($output, ['Branch', 'Student/Employee Number', 'Name', 'Program', 'College/Department', 'Year Level', 'Frequency']);
 
-            RfidTransaction::whereBetween('scanned_at', [$from, $to])
-                ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
-                ->whereNotNull('campus_id')
-                ->select([
-                    'branch_id',
-                    'campus_id',
-                    'cardholder_name',
-                    'cardholder_type',
-                    'program',
-                    'college_department',
-                    'year_level',
-                ])
-                ->selectRaw('COUNT(*) as frequency')
-                ->groupBy([
-                    'branch_id',
-                    'campus_id',
-                    'cardholder_name',
-                    'cardholder_type',
-                    'program',
-                    'college_department',
-                    'year_level',
-                ])
-                ->orderByDesc('frequency')
-                ->orderBy('cardholder_name')
-                ->with('branch')
+            $this->cardholderFrequency($from, $to, $branchId)
                 ->chunk(500, function ($cardholders) use ($output) {
                     foreach ($cardholders as $cardholder) {
                         fputcsv($output, [
                             $cardholder->branch?->name ?? 'Unknown branch',
-                            $cardholder->campus_id,
-                            $cardholder->cardholder_name,
+                            $cardholder->campus_id ?? 'Unidentified',
+                            $cardholder->cardholder_name ?: 'Unknown Cardholder',
                             $cardholder->program,
                             $cardholder->college_department,
                             $cardholder->year_level,
@@ -148,8 +101,8 @@ class ReportController extends Controller
             ['Branch', 'Student/Employee Number', 'Name', 'Program', 'College/Department', 'Year Level', 'Frequency'],
             ...$cardholders->map(fn ($cardholder) => [
                 $cardholder->branch?->name ?? 'Unknown branch',
-                $cardholder->campus_id,
-                $cardholder->cardholder_name,
+                $cardholder->campus_id ?? 'Unidentified',
+                $cardholder->cardholder_name ?: 'Unknown Cardholder',
                 $cardholder->program,
                 $cardholder->college_department,
                 $cardholder->year_level,
@@ -205,7 +158,6 @@ class ReportController extends Controller
     {
         return RfidTransaction::whereBetween('scanned_at', [$from, $to])
             ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
-            ->whereNotNull('campus_id')
             ->select([
                 'branch_id',
                 'campus_id',
@@ -227,7 +179,13 @@ class ReportController extends Controller
             ])
             ->with('branch')
             ->orderByDesc('frequency')
-            ->orderBy('cardholder_name');
+            ->orderBy('cardholder_name')
+            ->orderBy('branch_id')
+            ->orderBy('campus_id')
+            ->orderBy('cardholder_type')
+            ->orderBy('program')
+            ->orderBy('college_department')
+            ->orderBy('year_level');
     }
 
     private function groupFrequency(Collection $cardholders, string $field): Collection
