@@ -68,32 +68,72 @@
                     @if(auth()->user()->hasPermission('rfid-directory.update'))
                         <td>
                             <div class="rfid-update-disclosure">
-                                <button class="button secondary" type="button" popovertarget="rfid-update-{{ $record->cardholder_type }}-{{ $record->id }}">Update</button>
+                                <button class="button secondary" type="button" popovertarget="rfid-update-{{ $record->cardholder_type }}-{{ $record->id }}">Edit</button>
                                 <section id="rfid-update-{{ $record->cardholder_type }}-{{ $record->id }}" class="rfid-update-panel" popover="auto" aria-labelledby="rfid-update-title-{{ $record->cardholder_type }}-{{ $record->id }}">
                                     <div class="rfid-update-header">
                                         <div>
-                                            <span class="eyebrow">RFID assignment</span>
-                                            <h3 id="rfid-update-title-{{ $record->cardholder_type }}-{{ $record->id }}">Update RFID</h3>
+                                            <span class="eyebrow">Cardholder registry</span>
+                                            <h3 id="rfid-update-title-{{ $record->cardholder_type }}-{{ $record->id }}">Edit Cardholder</h3>
                                         </div>
-                                        <button type="button" popovertarget="rfid-update-{{ $record->cardholder_type }}-{{ $record->id }}" popovertargetaction="hide" aria-label="Close update panel">&times;</button>
+                                        <button type="button" popovertarget="rfid-update-{{ $record->cardholder_type }}-{{ $record->id }}" popovertargetaction="hide" aria-label="Close edit panel">&times;</button>
                                     </div>
                                     <div class="rfid-cardholder-summary">
                                         <strong>{{ $record->full_name }}</strong>
                                         <span>{{ $record->identifier }} &middot; {{ ucfirst($record->cardholder_type) }}</span>
                                     </div>
-                                    <form method="post" action="{{ route('admin.rfid-directory.update', [$record->cardholder_type, $record->id]) }}" class="form-grid">
+                                    <form method="post" action="{{ route('admin.rfid-directory.update', [$record->cardholder_type, $record->id]) }}" class="form-grid rfid-edit-form">
                                         @csrf
                                         @method('put')
-                                        <label>Current RFID
-                                            <input value="{{ $record->rfid_code }}" readonly aria-readonly="true">
+                                        <fieldset class="rfid-edit-section">
+                                            <legend>RFID and access</legend>
+                                            <div class="rfid-edit-fields">
+                                        <label class="rfid-field-wide">RFID
+                                            <input name="rfid_code" value="{{ $record->rfid_code }}" maxlength="255" autocomplete="off" required autofocus>
                                         </label>
-                                        <label>New RFID
-                                            <input name="rfid_code" maxlength="255" autocomplete="off" required autofocus>
+                                        <label>Status
+                                            <input name="status" value="{{ $record->status }}" maxlength="255" required>
                                         </label>
-                                        <p class="rfid-audit-note">This change will record the old RFID, new RFID, your user account, and the date and time.</p>
+                                        <label>Active
+                                            <select name="is_active">
+                                                <option value="1" @selected($record->is_active)>Active</option>
+                                                <option value="0" @selected(! $record->is_active)>Inactive</option>
+                                            </select>
+                                        </label>
+                                            </div>
+                                        </fieldset>
+                                        <fieldset class="rfid-edit-section">
+                                            <legend>Personal information</legend>
+                                            <div class="rfid-edit-fields">
+                                        <label class="rfid-field-wide">{{ $record->cardholder_type === 'student' ? 'Campus ID' : 'Employee No.' }}
+                                            <input name="{{ $record->cardholder_type === 'student' ? 'campus_id' : 'employee_number' }}" value="{{ $record->identifier }}" maxlength="255" required>
+                                        </label>
+                                        @foreach(['first_name' => 'First Name', 'middle_name' => 'Middle Name', 'last_name' => 'Last Name', 'suffix' => 'Suffix'] as $field => $label)
+                                            <label>{{ $label }}
+                                                <input name="{{ $field }}" value="{{ $record->{$field} }}" maxlength="255" @required(in_array($field, ['first_name', 'last_name']))>
+                                            </label>
+                                        @endforeach
+                                            </div>
+                                        </fieldset>
+                                        <fieldset class="rfid-edit-section">
+                                            <legend>{{ $record->cardholder_type === 'student' ? 'Academic details' : 'Employment details' }}</legend>
+                                            <div class="rfid-edit-fields">
+                                        <label>{{ $record->cardholder_type === 'student' ? 'Program' : 'Position' }}
+                                            <input name="{{ $record->cardholder_type === 'student' ? 'program' : 'position' }}" value="{{ $record->primary_detail }}" maxlength="255">
+                                        </label>
+                                        <label>{{ $record->cardholder_type === 'student' ? 'College' : 'Office' }}
+                                            <input name="{{ $record->cardholder_type === 'student' ? 'college' : 'office' }}" value="{{ $record->secondary_detail }}" maxlength="255">
+                                        </label>
+                                        @if($record->cardholder_type === 'student')
+                                            <label>Year Level
+                                                <input name="year_level" value="{{ $record->year_level }}" maxlength="255">
+                                            </label>
+                                        @endif
+                                            </div>
+                                        </fieldset>
+                                        <p class="rfid-audit-note">RFID changes record the old and new values, your user account, and the date and time.</p>
                                         <div class="form-actions">
                                             <button class="button secondary" type="button" popovertarget="rfid-update-{{ $record->cardholder_type }}-{{ $record->id }}" popovertargetaction="hide">Cancel</button>
-                                            <button class="primary" type="submit">Save RFID</button>
+                                            <button class="primary" type="submit">Save Changes</button>
                                         </div>
                                     </form>
                                 </section>

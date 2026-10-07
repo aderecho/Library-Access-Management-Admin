@@ -9,6 +9,7 @@ use App\Models\Student;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class RfidDirectoryController extends Controller
@@ -28,6 +29,7 @@ class RfidDirectoryController extends Controller
             DB::raw('college as secondary_detail'),
             'status',
             'is_active',
+            'year_level',
         ]);
 
         $employees = DB::table('employees')->select([
@@ -43,6 +45,7 @@ class RfidDirectoryController extends Controller
             DB::raw('office as secondary_detail'),
             'status',
             'is_active',
+            DB::raw('NULL as year_level'),
         ]);
 
         $search = trim($request->string('search')->toString());
@@ -53,12 +56,9 @@ class RfidDirectoryController extends Controller
             ->fromSub($students->unionAll($employees), 'rfid_directory')
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($query) use ($search): void {
-                    $query->where('identifier', 'like', "%{$search}%")
-                        ->orWhere('rfid_code', 'like', "%{$search}%")
-                        ->orWhere('first_name', 'like', "%{$search}%")
-                        ->orWhere('middle_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%")
-                        ->orWhere('suffix', 'like', "%{$search}%");
+                    foreach (['identifier', 'rfid_code', 'first_name', 'middle_name', 'last_name', 'suffix'] as $column) {
+                        $query->orWhereRaw("LOWER({$column}) LIKE LOWER(?)", ["%{$search}%"]);
+                    }
                 });
             })
             ->when(in_array($type, ['student', 'employee'], true), fn ($query) => $query->where('cardholder_type', $type))
@@ -68,6 +68,10 @@ class RfidDirectoryController extends Controller
             ->withQueryString();
 
         $directory->getCollection()->transform(function ($record) {
+            if ($record->cardholder_type === 'student') {
+                $record->identifier = preg_replace('/\s+/u', '', $record->identifier);
+            }
+
             $record->full_name = collect([
                 $record->first_name,
                 $record->middle_name,
@@ -88,8 +92,27 @@ class RfidDirectoryController extends Controller
 
     public function update(Request $request, string $cardholderType, int $cardholderId)
     {
+        $model = $this->cardholderQuery($cardholderType);
+        $identifier = $cardholderType === 'student' ? 'campus_id' : 'employee_number';
+        $primary = $cardholderType === 'student' ? 'program' : 'position';
+        $secondary = $cardholderType === 'student' ? 'college' : 'office';
+
+        if ($cardholderType === 'student' && is_string($request->input('campus_id'))) {
+            $request->merge(['campus_id' => preg_replace('/\s+/u', '', $request->input('campus_id'))]);
+        }
+
         $validated = $request->validate([
             'rfid_code' => ['required', 'string', 'max:255'],
+            $identifier => ['sometimes', 'required', 'string', 'max:255', Rule::unique($model->getTable(), $identifier)->ignore($cardholderId)],
+            'first_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'middle_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'last_name' => ['sometimes', 'required', 'string', 'max:255'],
+            'suffix' => ['sometimes', 'nullable', 'string', 'max:255'],
+            $primary => ['sometimes', 'nullable', 'string', 'max:255'],
+            $secondary => ['sometimes', 'nullable', 'string', 'max:255'],
+            'year_level' => ['sometimes', 'nullable', 'string', 'max:255', Rule::prohibitedIf($cardholderType !== 'student')],
+            'status' => ['sometimes', 'required', 'string', 'max:255'],
+            'is_active' => ['sometimes', 'required', 'boolean'],
         ]);
         $newRfidCode = trim($validated['rfid_code']);
 
@@ -97,13 +120,9 @@ class RfidDirectoryController extends Controller
             throw ValidationException::withMessages(['rfid_code' => 'The RFID code is required.']);
         }
 
-        DB::transaction(function () use ($request, $cardholderType, $cardholderId, $newRfidCode): void {
+        DB::transaction(function () use ($request, $cardholderType, $cardholderId, $newRfidCode, $validated): void {
             $cardholder = $this->cardholderQuery($cardholderType)->lockForUpdate()->findOrFail($cardholderId);
             $oldRfidCode = (string) $cardholder->rfid_code;
-
-            if ($oldRfidCode === $newRfidCode) {
-                throw ValidationException::withMessages(['rfid_code' => 'Enter a different RFID code.']);
-            }
 
             $duplicateStudent = Student::where('rfid_code', $newRfidCode)
                 ->when($cardholderType === 'student', fn ($query) => $query->whereKeyNot($cardholderId))
@@ -116,20 +135,22 @@ class RfidDirectoryController extends Controller
                 throw ValidationException::withMessages(['rfid_code' => 'This RFID code is already assigned to another cardholder.']);
             }
 
-            $cardholder->update(['rfid_code' => $newRfidCode]);
+            $cardholder->update([...$validated, 'rfid_code' => $newRfidCode]);
 
-            RfidChangeLog::create([
-                'cardholder_type' => $cardholderType,
-                'cardholder_id' => $cardholder->getKey(),
-                'cardholder_identifier' => $cardholderType === 'student' ? $cardholder->campus_id : $cardholder->employee_number,
-                'cardholder_name' => $cardholder->full_name,
-                'old_rfid_code' => $oldRfidCode,
-                'new_rfid_code' => $newRfidCode,
-                'changed_by' => $request->user()->id,
-            ]);
+            if ($oldRfidCode !== $newRfidCode) {
+                RfidChangeLog::create([
+                    'cardholder_type' => $cardholderType,
+                    'cardholder_id' => $cardholder->getKey(),
+                    'cardholder_identifier' => $cardholderType === 'student' ? $cardholder->campus_id : $cardholder->employee_number,
+                    'cardholder_name' => $cardholder->full_name,
+                    'old_rfid_code' => $oldRfidCode,
+                    'new_rfid_code' => $newRfidCode,
+                    'changed_by' => $request->user()->id,
+                ]);
+            }
         });
 
-        return redirect()->route('admin.rfid-directory.index')->with('success', 'RFID record updated and logged.');
+        return redirect()->route('admin.rfid-directory.index')->with('success', 'Cardholder record updated successfully.');
     }
 
     private function cardholderQuery(string $cardholderType): Model
