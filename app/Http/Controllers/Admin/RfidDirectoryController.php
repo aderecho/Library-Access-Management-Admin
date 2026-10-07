@@ -90,6 +90,39 @@ class RfidDirectoryController extends Controller
         return view('admin.rfid-directory.index', compact('directory', 'recentChanges', 'activeTab'));
     }
 
+    public function store(Request $request, string $cardholderType)
+    {
+        $model = $this->cardholderQuery($cardholderType);
+        $identifier = $cardholderType === 'student' ? 'campus_id' : 'employee_number';
+        $primary = $cardholderType === 'student' ? 'program' : 'position';
+        $secondary = $cardholderType === 'student' ? 'college' : 'office';
+
+        if ($cardholderType === 'student' && is_string($request->input('campus_id'))) {
+            $request->merge(['campus_id' => preg_replace('/\s+/u', '', $request->input('campus_id'))]);
+        }
+        if (is_string($request->input('rfid_code'))) {
+            $request->merge(['rfid_code' => trim($request->input('rfid_code'))]);
+        }
+
+        $validated = $request->validate([
+            'rfid_code' => ['required', 'string', 'max:255', Rule::unique('students', 'rfid_code'), Rule::unique('employees', 'rfid_code')],
+            $identifier => ['required', 'string', 'max:255', Rule::unique($model->getTable(), $identifier)],
+            'first_name' => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'suffix' => ['nullable', 'string', 'max:255'],
+            $primary => ['nullable', 'string', 'max:255'],
+            $secondary => ['nullable', 'string', 'max:255'],
+            'year_level' => ['nullable', 'string', 'max:255', Rule::prohibitedIf($cardholderType !== 'student')],
+            'status' => ['required', 'string', 'max:255'],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $model->create($validated);
+
+        return redirect()->route('admin.rfid-directory.index')->with('success', 'Cardholder added successfully.');
+    }
+
     public function update(Request $request, string $cardholderType, int $cardholderId)
     {
         $model = $this->cardholderQuery($cardholderType);

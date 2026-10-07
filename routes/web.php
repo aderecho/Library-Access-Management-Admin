@@ -44,6 +44,10 @@ Route::prefix('admin')
         Route::get('/reports/export', [ReportController::class, 'export'])->middleware('permission:reports.export')->name('reports.export');
         Route::get('/reports/export-excel', [ReportController::class, 'exportExcel'])->middleware('permission:reports.export')->name('reports.export-excel');
         Route::get('/rfid-directory', [RfidDirectoryController::class, 'index'])->middleware('permission:rfid-directory.view')->name('rfid-directory.index');
+        Route::post('/rfid-directory/{cardholderType}', [RfidDirectoryController::class, 'store'])
+            ->whereIn('cardholderType', ['student', 'employee'])
+            ->middleware('permission:rfid-directory.update')
+            ->name('rfid-directory.store');
         Route::put('/rfid-directory/{cardholderType}/{cardholderId}', [RfidDirectoryController::class, 'update'])
             ->whereIn('cardholderType', ['student', 'employee'])
             ->whereNumber('cardholderId')
