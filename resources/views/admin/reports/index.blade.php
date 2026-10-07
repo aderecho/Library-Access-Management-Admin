@@ -46,8 +46,8 @@
             @forelse($cardholders as $cardholder)
                 <tr>
                     <td><strong>{{ $cardholder->branch?->name ?? 'Unknown branch' }}</strong></td>
-                    <td>{{ $cardholder->campus_id }}</td>
-                    <td>{{ $cardholder->cardholder_name }}</td>
+                    <td>{{ $cardholder->campus_id ?? 'Unidentified' }}</td>
+                    <td>{{ $cardholder->cardholder_name ?: 'Unknown Cardholder' }}</td>
                     <td>{{ $cardholder->program ?: '—' }}</td>
                     <td>{{ $cardholder->college_department ?: '—' }}</td>
                     <td>{{ $cardholder->year_level ?: '—' }}</td>
