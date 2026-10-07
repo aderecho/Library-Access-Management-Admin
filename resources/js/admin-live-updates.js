@@ -1,4 +1,5 @@
 import './echo';
+import './rfid-directory';
 
 const liveScanPage = document.querySelector('[data-live-scan-page]');
 
