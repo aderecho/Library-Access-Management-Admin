@@ -145,6 +145,15 @@ class RfidScanController extends Controller
     {
         $student = Student::where('rfid_code', $identifierInput)->first();
         $employee = $student ? null : Employee::where('rfid_code', $identifierInput)->first();
+        if (! $student && ! $employee) {
+            $rfidSuffix = ltrim($identifierInput, '0');
+
+            if ($rfidSuffix !== '') {
+                $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $rfidSuffix);
+                $student = Student::whereRaw("rfid_code LIKE ? ESCAPE '!'", [$pattern])->first();
+                $employee = $student ? null : Employee::whereRaw("rfid_code LIKE ? ESCAPE '!'", [$pattern])->first();
+            }
+        }
         $student ??= $employee ? null : Student::where('campus_id', $identifierInput)->first();
         $employee ??= $student ? null : Employee::where('employee_number', $identifierInput)->first();
         $cardholder = $student ?? $employee;
