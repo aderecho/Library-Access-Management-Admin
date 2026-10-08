@@ -35,6 +35,47 @@ class RfidScanTest extends TestCase
         ]);
     }
 
+    public function test_scan_matches_rfid_suffix_with_leading_zeros(): void
+    {
+        foreach ([Student::class, Employee::class] as $model) {
+            foreach ([['00012345678', '12345678'], ['87654321', '00087654321']] as [$stored, $scanned]) {
+                $cardholder = $model::create([
+                    $model === Student::class ? 'campus_id' : 'employee_number' => 'TEST-'.$stored,
+                    'rfid_code' => $stored,
+                    'first_name' => 'Suffix',
+                    'last_name' => 'Tester',
+                    'is_active' => true,
+                ]);
+
+                $this->withHeader('X-Scanner-Token', $this->scannerToken)
+                    ->postJson('/api/rfid/scan', ['rfid_code' => $scanned])
+                    ->assertOk()
+                    ->assertJsonPath('valid', true)
+                    ->assertJsonPath('cardholderType', $model === Student::class ? 'student' : 'employee')
+                    ->assertJsonPath('rfidCode', $stored);
+
+                $this->assertDatabaseHas('rfid_transactions', [
+                    $model === Student::class ? 'student_id' : 'employee_id' => $cardholder->id,
+                    'rfid_code' => $stored,
+                    'status' => 'valid',
+                ]);
+                $cardholder->delete();
+            }
+        }
+    }
+
+    public function test_exact_employee_rfid_match_takes_priority_over_student_suffix(): void
+    {
+        Student::create(['campus_id' => 'TEST-STUDENT', 'rfid_code' => '00012345678', 'is_active' => true]);
+        Employee::create(['employee_number' => 'TEST-EMPLOYEE', 'rfid_code' => '12345678', 'is_active' => true]);
+
+        $this->withHeader('X-Scanner-Token', $this->scannerToken)
+            ->postJson('/api/rfid/scan', ['rfid_code' => '12345678'])
+            ->assertOk()
+            ->assertJsonPath('valid', true)
+            ->assertJsonPath('cardholderType', 'employee');
+    }
+
     public function test_active_employee_rfid_is_accepted(): void
     {
         $employee = Employee::create([
